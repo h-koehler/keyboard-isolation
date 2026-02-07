@@ -1,7 +1,9 @@
 use crate::{
-    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH}, ui::UI_HEIGHT
+    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
+    ui::UI_HEIGHT,
 };
 use bevy::prelude::*;
+use bevy_light_2d::prelude::*;
 
 const MOVE_SPEED: f32 = 200.0;
 const VELOCITY_CHANGE: f32 = 1.0;
@@ -80,7 +82,15 @@ fn apply_velocity(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((Camera2d::default(),));
+    commands.spawn((
+        Camera2d::default(),
+        Light2d {
+            ambient_light: AmbientLight2d {
+                brightness: 0.0, // More like darkness amiright
+                ..default()
+            },
+        },
+    ));
 
     commands.spawn((
         Character,
@@ -92,6 +102,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..Default::default()
         },
         Transform::from_translation(Vec3::Z * 3.0),
+        PointLight2d {
+            radius: 48.0,
+            intensity: 1.0,
+            falloff: 4.0,
+            ..default()
+        },
     ));
 }
 
