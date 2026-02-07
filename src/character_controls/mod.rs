@@ -1,9 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::{
-    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
-    ui::UI_HEIGHT,
-};
+use crate::room::Movable;
 use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
@@ -11,8 +8,8 @@ const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
 const VELOCITY_CHANGE: f32 = 1.0;
 const PLAYER_ASS_PATH: &str = "player_up.png";
-const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
-const ROOM_INSET: f32 = 4.0;
+// const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
+// const ROOM_INSET: f32 = 4.0;
 
 #[derive(Component)]
 pub struct Character;
