@@ -130,7 +130,7 @@ fn player_rotation_input(
     if dir.length() > f32::EPSILON {
         trans.rotation = trans
             .rotation
-            .lerp(Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(dir)), 0.05);
+            .lerp(Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(dir)), 0.1);
     }
 }
 
