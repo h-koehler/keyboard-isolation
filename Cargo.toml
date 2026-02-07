@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 bevy = "0.17.0"
 bevy-inspector-egui = "0.35.0"
-bevy_light_2d = "0.8.0"
+bevy_lit = "0.9"

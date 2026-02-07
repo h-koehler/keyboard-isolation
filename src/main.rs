@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
-use bevy_light_2d::prelude::*;
+use bevy_lit::prelude::Lighting2dPlugin;
 
 use crate::{
     room::{ROOM_HEIGHT, ROOM_WIDTH},
@@ -23,7 +23,7 @@ fn main() {
             }),
             ..Default::default()
         }),
-        Light2dPlugin,
+        Lighting2dPlugin,
     ))
     .add_plugins(EguiPlugin::default())
     .add_plugins(WorldInspectorPlugin::default());
