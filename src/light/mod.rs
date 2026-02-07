@@ -25,7 +25,7 @@ fn check_in_light(
                 && (trans.translation() - check_trans.translation).length()
                     < (light.outer_radius + check.0)
         }) || q_spotlight.iter().any(|(g_trans, light)| {
-            let moved_trans = /* parent_trans.rotation().inverse() * */ check_trans.translation;
+            let moved_trans = check_trans.translation;
             let dotted = moved_trans.normalize_or_zero().dot(g_trans.left().into());
 
             dotted > (1.0 - light.outer_angle / 90.0)
