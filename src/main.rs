@@ -32,8 +32,7 @@ fn main() {
     character_controls::register(&mut app);
     room::register(&mut app);
     ui::register(&mut app);
+    enemies::register(&mut app);
 
-    app.run();
-}
     app.run();
 }
