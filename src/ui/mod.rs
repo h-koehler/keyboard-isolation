@@ -7,13 +7,15 @@ pub const HEALTH_TEXT: &str = "HEALTH: ";
 pub const STATUS_EFFECT_TEXT: &str = "EFFECTS: ";
 
 #[derive(Component)]
-pub struct UI;
+pub struct HealthUI;
+
+#[derive(Component)]
+pub struct StatusUI;
 
 fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             Name::new("UI"),
-            UI,
             Node {
                 bottom: Val::Px(0.0),
                 width: Val::Percent(100.0),
@@ -43,6 +45,7 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
             p.spawn((
                 Name::new("Health Amount"),
+                HealthUI,
                 Node {
                     margin: UiRect::horizontal(Val::Px(5.0)),
                     ..Default::default()
@@ -75,6 +78,7 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
             p.spawn((
                 Name::new("Status Effects"),
+                StatusUI,
                 Node {
                     margin: UiRect::horizontal(Val::Px(5.0)),
                     ..Default::default()
@@ -97,7 +101,49 @@ fn update_ui(
     asset_server: Res<AssetServer>,
     q_player: Query<&Character>,
     q_status_effects: Query<&StatusEffects>,
+    q_health_ui: Query<Entity, With<HealthUI>>,
+    q_status_ui: Query<Entity, With<StatusUI>>,
 ) {
+    if let Ok(player) = q_player.single() {
+        if let Ok(health_ui) = q_health_ui.single() {
+            commands.entity(health_ui).despawn_children();
+            commands.entity(health_ui).with_child((
+                Text::new(player.health.to_string()),
+                TextFont {
+                    font: asset_server.load("fonts/default.ttf"),
+                    font_size: 33.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+            ));
+        }
+
+        let mut status_effects_text = String::from("");
+
+        if let Ok(status_effects) = q_status_effects.single() {
+            for status_effect in status_effects.iter() {
+                let status_effect_text;
+                match status_effect {
+                    StatusEffect::Blind => status_effect_text = "Blind, ",
+                    StatusEffect::Slowed => status_effect_text = "Slowed, ",
+                }
+                status_effects_text.push_str(status_effect_text);
+            }
+        }
+
+        if let Ok(status_ui) = q_status_ui.single() {
+            commands.entity(status_ui).despawn_children();
+            commands.entity(status_ui).with_child((
+                Text::new(status_effects_text),
+                TextFont {
+                    font: asset_server.load("fonts/default.ttf"),
+                    font_size: 33.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+            ));
+        }
+    }
 }
 
 pub(super) fn register(app: &mut App) {

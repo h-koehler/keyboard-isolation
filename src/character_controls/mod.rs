@@ -146,6 +146,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             Character {
                 health: STARTING_HEALTH,
             },
+            StatusEffects(HashSet::new()),
             Movable,
             Velocity::default(),
             Sprite {
