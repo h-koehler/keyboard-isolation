@@ -38,7 +38,12 @@ fn show_dialog_on_close(
                 BorderColor::all(css::GOLD),
                 BackgroundColor(Color::BLACK),
                 Node {
-                    top: Val::Px(600.0),
+                    margin: UiRect {
+                        top: Val::Px(300.0),
+                        left: Val::Auto,
+                        right: Val::Auto,
+                        bottom: Val::Auto,
+                    },
                     width: Val::Px(400.0),
                     min_height: Val::Px(300.0),
                     padding: UiRect::all(Val::Px(10.0)),
@@ -51,7 +56,7 @@ fn show_dialog_on_close(
                     Text::new(dialog.0.0.clone()),
                     TextFont {
                         font: asset_server.load("fonts/default.ttf"),
-                        font_size: 52.0,
+                        font_size: 42.0,
                         ..Default::default()
                     },
                 ));
