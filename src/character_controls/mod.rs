@@ -1,18 +1,44 @@
 use std::f32::consts::PI;
 
 use crate::room::Movable;
-use bevy::prelude::*;
+use bevy::{platform::collections::HashSet, prelude::*};
 use bevy_lit::prelude::*;
 
 const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
 const VELOCITY_CHANGE: f32 = 1.0;
 const PLAYER_ASS_PATH: &str = "player_up.png";
+const STARTING_HEALTH: i8 = 3;
 // const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
 // const ROOM_INSET: f32 = 4.0;
 
 #[derive(Component)]
-pub struct Character;
+pub struct Character {
+    pub health: i8,
+}
+
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub enum StatusEffect {
+    Slowed,
+    Blind,
+}
+
+#[derive(Component)]
+pub struct StatusEffects(HashSet<StatusEffect>);
+
+impl StatusEffects {
+    pub fn add_effect(&mut self, status_effect: StatusEffect) {
+        self.0.insert(status_effect);
+    }
+
+    pub fn remove_effect(&mut self, status_effect: StatusEffect) {
+        self.0.remove(&status_effect);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = StatusEffect> {
+        self.0.iter().copied()
+    }
+}
 
 #[derive(Component, Default)]
 pub struct Velocity {
@@ -76,6 +102,24 @@ fn apply_velocity(
     }
 }
 
+fn take_damage(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health > 0 {
+        player.health -= 1;
+    } else {
+        println!("Can't take any more damage.")
+    }
+}
+
+fn heal(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health < STARTING_HEALTH {
+        player.health += 1;
+    } else {
+        println!("Can't heal any more lives.")
+    }
+}
+
 #[derive(Component)]
 pub struct Flashlight;
 
@@ -93,7 +137,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn((
-            Character,
+            Character {
+                health: STARTING_HEALTH,
+            },
+            StatusEffects(HashSet::new()),
             Movable,
             Velocity::default(),
             Sprite {
