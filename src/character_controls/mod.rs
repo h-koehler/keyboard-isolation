@@ -1,9 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::{
-    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
-    ui::UI_HEIGHT,
-};
+use crate::room::Movable;
 use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
@@ -11,8 +8,8 @@ const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
 const VELOCITY_CHANGE: f32 = 1.0;
 const PLAYER_ASS_PATH: &str = "player_up.png";
-const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
-const ROOM_INSET: f32 = 4.0;
+// const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
+// const ROOM_INSET: f32 = 4.0;
 
 #[derive(Component)]
 pub struct Character;
@@ -60,22 +57,22 @@ fn apply_velocity(
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
 
-        let half_width = ROOM_WIDTH as f32 / 2.0;
-        let half_height = ROOM_HEIGHT as f32 / 2.0;
+        // let half_width = ROOM_WIDTH as f32 / 2.0;
+        // let half_height = ROOM_HEIGHT as f32 / 2.0;
+        //
+        // let (half_player_width, half_player_height) = if let Some(size) = PLAYER_SIZE {
+        //     (size.x * 0.5, size.y * 0.5)
+        // } else {
+        //     (50.0, 50.0)
+        // };
 
-        let (half_player_width, half_player_height) = if let Some(size) = PLAYER_SIZE {
-            (size.x * 0.5, size.y * 0.5)
-        } else {
-            (50.0, 50.0)
-        };
-
-        let min_x = -half_width + half_player_width + ROOM_INSET;
-        let max_x = half_width - half_player_width - ROOM_INSET;
-        let min_y = UI_HEIGHT / 2.0 + -half_height + half_player_height + ROOM_INSET;
-        let max_y = UI_HEIGHT / 2.0 + half_height - half_player_height - ROOM_INSET;
-
-        trans.translation.x = trans.translation.x.clamp(min_x, max_x);
-        trans.translation.y = trans.translation.y.clamp(min_y, max_y);
+        // let min_x = -half_width + half_player_width + ROOM_INSET;
+        // let max_x = half_width - half_player_width - ROOM_INSET;
+        // let min_y = UI_HEIGHT / 2.0 + -half_height + half_player_height + ROOM_INSET;
+        // let max_y = UI_HEIGHT / 2.0 + half_height - half_player_height - ROOM_INSET;
+        //
+        // trans.translation.x = trans.translation.x.clamp(min_x, max_x);
+        // trans.translation.y = trans.translation.y.clamp(min_y, max_y);
     }
 }
 
@@ -145,8 +142,24 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 //     // });
 // }
 
+fn camera_follow_player(
+    mut q_cam: Query<&mut Transform, With<Camera2d>>,
+    q_player: Query<(&Transform, &Velocity), (With<Character>, Without<Camera2d>)>,
+) {
+    let Ok((player_trans, player_vel)) = q_player.single() else {
+        return;
+    };
+    for mut trans in q_cam.iter_mut() {
+        let lerpped = trans.translation.lerp(
+            player_trans.translation + player_vel.linear_velocity.extend(0.0) * 0.1,
+            0.1,
+        );
+        trans.translation = Vec3::new(lerpped.x, lerpped.y, trans.translation.z);
+    }
+}
+
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, (setup /*load_profiles*/,));
     app.add_systems(Update, player_input);
-    app.add_systems(PostUpdate, apply_velocity);
+    app.add_systems(PostUpdate, (apply_velocity, camera_follow_player).chain());
 }

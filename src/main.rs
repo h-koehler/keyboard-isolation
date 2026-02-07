@@ -33,6 +33,7 @@ fn main() {
     room::register(&mut app);
     ui::register(&mut app);
     enemies::register(&mut app);
+    sanity::register(&mut app);
 
     app.run();
 }
