@@ -145,8 +145,24 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 //     // });
 // }
 
+fn camera_follow_player(
+    mut q_cam: Query<&mut Transform, With<Camera2d>>,
+    q_player: Query<(&Transform, &Velocity), (With<Character>, Without<Camera2d>)>,
+) {
+    let Ok((player_trans, player_vel)) = q_player.single() else {
+        return;
+    };
+    for mut trans in q_cam.iter_mut() {
+        let lerpped = trans.translation.lerp(
+            player_trans.translation + player_vel.linear_velocity.extend(0.0) * 0.1,
+            0.1,
+        );
+        trans.translation = Vec3::new(lerpped.x, lerpped.y, trans.translation.z);
+    }
+}
+
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, (setup /*load_profiles*/,));
     app.add_systems(Update, player_input);
-    app.add_systems(PostUpdate, apply_velocity);
+    app.add_systems(PostUpdate, (apply_velocity, camera_follow_player).chain());
 }
