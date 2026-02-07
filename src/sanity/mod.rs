@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::{color::palettes::css, prelude::*};
 
 use crate::character_controls::Character;
@@ -6,9 +8,48 @@ use crate::character_controls::Character;
 #[require(SanityBlockers)]
 pub struct Sanity(f32);
 
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Reflect)]
 pub struct SanityBlocker {
-    amount: f32,
+    pub amount: f32,
+    pub duration: Duration,
 }
+
+pub const HURT_SANITY_BLOCKER: SanityBlocker = SanityBlocker {
+    amount: 10.0,
+    duration: Duration::from_secs(120),
+};
+pub const DEAD_FRIEND_SANITY_BLOCKER: SanityBlocker = SanityBlocker {
+    amount: 10.0,
+    duration: Duration::from_secs(120),
+};
+pub const DEAD_SO_SANITY_BLOCKER: SanityBlocker = SanityBlocker {
+    amount: 20.0,
+    duration: Duration::from_secs(120),
+};
+
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Reflect)]
+pub struct SanityAmplifier {
+    pub amount: f32,
+    pub duration: Duration,
+}
+
+pub const DRUG_SANITY_AMPLIFIER: SanityAmplifier = SanityAmplifier {
+    amount: 4.0,
+    duration: Duration::from_secs(120),
+};
+pub const DEAD_SO_SANITY_AMPLIFIER: SanityAmplifier = SanityAmplifier {
+    amount: 2.0,
+    duration: Duration::from_secs(120),
+};
+
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Reflect)]
+pub struct SanityBoost {
+    pub amount: f32,
+    pub duration: Duration,
+}
+
+#[derive(Clone, Component, Debug, PartialEq, PartialOrd, Reflect)]
+pub struct SanityAmplifiers(Vec<SanityAmplifier>);
 
 impl Default for Sanity {
     fn default() -> Self {
@@ -22,12 +63,31 @@ impl Sanity {
     }
 }
 
-#[derive(Component, Default)]
-pub struct SanityBlockers(Vec<SanityBlocker>);
+#[derive(Component, Default, Reflect)]
+pub struct SanityBlockers(Vec<(SanityBlocker, f32)>);
 
 impl SanityBlockers {
+    pub fn tick_blockers(&mut self, delta: f32) {
+        for blocker in self.0.iter_mut() {
+            blocker.1 += delta;
+        }
+    }
+
     pub fn maximum_sanity(&self) -> Sanity {
-        Sanity::new(100.0_f32 - self.0.iter().map(|x| x.amount).sum::<f32>())
+        Sanity::new(
+            100.0_f32
+                - self
+                    .0
+                    .iter()
+                    .map(|(x, time_had)| {
+                        x.amount
+                            * (1.0
+                                - ((*time_had - x.duration.as_secs_f32() / 2.0).max(0.0)
+                                    / (x.duration.as_secs_f32() / 2.0))
+                                    .clamp(0.0, 1.0))
+                    })
+                    .sum::<f32>(),
+        )
     }
 }
 
@@ -105,10 +165,23 @@ fn update_sanity_bar(
     .into();
 }
 
+fn tick_sanity(mut q_sanity: Query<&mut SanityBlockers>, time: Res<Time>) {
+    let delta = time.delta_secs();
+    for mut blocker in q_sanity.iter_mut() {
+        blocker.tick_blockers(delta);
+    }
+}
+
 pub(super) fn register(app: &mut App) {
     app.add_systems(
         Update,
-        (add_sanity, clamp_sanity_to_max, update_sanity_bar).chain(),
+        (
+            add_sanity,
+            tick_sanity,
+            clamp_sanity_to_max,
+            update_sanity_bar,
+        )
+            .chain(),
     )
     .add_systems(Startup, add_sanity_bar);
 }
