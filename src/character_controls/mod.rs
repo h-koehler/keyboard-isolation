@@ -7,7 +7,7 @@ use crate::{
 use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
-const DEBUG_BRIGHTNESS: bool = false;
+const DEBUG_BRIGHTNESS: bool = true;
 const MOVE_SPEED: f32 = 200.0;
 const VELOCITY_CHANGE: f32 = 1.0;
 const PLAYER_ASS_PATH: &str = "player_up.png";
