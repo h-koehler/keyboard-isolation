@@ -1,21 +1,46 @@
-use std::f32::consts::PI;
-
 use crate::{
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
 };
+use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
 const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
-const VELOCITY_CHANGE: f32 = 1.0;
+const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
+pub const STARTING_HEALTH: i8 = 3;
 // const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
 // const ROOM_INSET: f32 = 4.0;
 
 #[derive(Component)]
-pub struct Character;
+pub struct Character {
+    pub health: i8,
+}
+
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub enum StatusEffect {
+    Slowed,
+    Blind,
+}
+
+#[derive(Component)]
+pub struct StatusEffects(HashSet<StatusEffect>);
+
+impl StatusEffects {
+    pub fn add_effect(&mut self, status_effect: StatusEffect) {
+        self.0.insert(status_effect);
+    }
+
+    pub fn remove_effect(&mut self, status_effect: StatusEffect) {
+        self.0.remove(&status_effect);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = StatusEffect> {
+        self.0.iter().copied()
+    }
+}
 
 #[derive(Component, Default)]
 pub struct Velocity {
@@ -24,31 +49,24 @@ pub struct Velocity {
 
 fn player_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Transform, &mut Velocity), With<Character>>,
+    mut q_player: Query<&mut Velocity, With<Character>>,
 ) {
-    let (mut trans, mut char_vel) = q_player.single_mut().expect("No Player Object");
+    let mut char_vel = q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
-
     if inputs.pressed(KeyCode::KeyA) {
-        dir.x -= VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, PI / 2.0);
+        dir.x -= 1.0;
     }
     if inputs.pressed(KeyCode::KeyD) {
-        dir.x += VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, -PI / 2.0);
+        dir.x += 1.0;
     }
     if inputs.pressed(KeyCode::KeyW) {
-        dir.y += VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, 0.0);
+        dir.y += 1.0;
     }
     if inputs.pressed(KeyCode::KeyS) {
-        dir.y -= VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, PI);
+        dir.y -= 1.0;
     }
-
-    char_vel.linear_velocity = char_vel
-        .linear_velocity
-        .lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
+    dir = dir.normalize_or_zero();
+    char_vel.linear_velocity = char_vel.linear_velocity.lerp(dir * MOVE_SPEED, 0.5);
 }
 
 fn apply_velocity(
@@ -59,6 +77,10 @@ fn apply_velocity(
     for (mut trans, vel) in q_player.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
+
+        if vel.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE {
+            trans.rotation = Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(vel.linear_velocity));
+        }
 
         // let half_width = ROOM_WIDTH as f32 / 2.0;
         // let half_height = ROOM_HEIGHT as f32 / 2.0;
@@ -76,6 +98,24 @@ fn apply_velocity(
         //
         // trans.translation.x = trans.translation.x.clamp(min_x, max_x);
         // trans.translation.y = trans.translation.y.clamp(min_y, max_y);
+    }
+}
+
+fn take_damage(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health > 0 {
+        player.health -= 1;
+    } else {
+        println!("Can't take any more damage.")
+    }
+}
+
+fn heal(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health < STARTING_HEALTH {
+        player.health += 1;
+    } else {
+        println!("Can't heal any more lives.")
     }
 }
 
@@ -97,7 +137,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             Name::new("Character"),
-            Character,
+            Character {
+                health: STARTING_HEALTH,
+            },
+            StatusEffects(HashSet::new()),
             Movable,
             CheckInLight(45.0),
             Velocity::default(),
@@ -125,8 +168,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     outer_angle: 25.0,
                     ..default()
                 },
-                Transform::from_xyz(0.0, 0.0, 0.0)
-                    .with_rotation(Quat::from_rotation_z(90_f32.to_radians())),
             ));
         });
 }
