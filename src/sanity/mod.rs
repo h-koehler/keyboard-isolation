@@ -71,6 +71,8 @@ impl SanityBlockers {
         for blocker in self.0.iter_mut() {
             blocker.1 += delta;
         }
+
+        self.0.retain(|x| x.0.duration.as_secs_f32() < x.1);
     }
 
     pub fn maximum_sanity(&self) -> Sanity {
