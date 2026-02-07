@@ -6,7 +6,7 @@ const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
-const STARTING_HEALTH: i8 = 3;
+pub const STARTING_HEALTH: i8 = 3;
 // const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
 // const ROOM_INSET: f32 = 4.0;
 
