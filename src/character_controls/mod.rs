@@ -50,7 +50,7 @@ pub struct Velocity {
     pub linear_velocity: Vec2,
 }
 
-fn player_input(
+fn player_movement_input(
     inputs: Res<ButtonInput<KeyCode>>,
     mut q_player: Query<&mut Velocity, With<Character>>,
 ) {
@@ -68,8 +68,9 @@ fn player_input(
     if inputs.pressed(KeyCode::KeyS) {
         dir.y -= 1.0;
     }
-    dir = dir.normalize_or_zero();
-    char_vel.linear_velocity = char_vel.linear_velocity.lerp(dir * MOVE_SPEED, 0.5);
+    char_vel.linear_velocity = char_vel
+        .linear_velocity
+        .lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
 }
 
 fn apply_velocity(
@@ -80,10 +81,6 @@ fn apply_velocity(
     for (mut trans, vel) in q_player.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
-
-        if vel.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE {
-            trans.rotation = Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(vel.linear_velocity));
-        }
 
         // let half_width = ROOM_WIDTH as f32 / 2.0;
         // let half_height = ROOM_HEIGHT as f32 / 2.0;
@@ -101,6 +98,39 @@ fn apply_velocity(
         //
         // trans.translation.x = trans.translation.x.clamp(min_x, max_x);
         // trans.translation.y = trans.translation.y.clamp(min_y, max_y);
+    }
+}
+
+fn player_rotation_input(
+    inputs: Res<ButtonInput<KeyCode>>,
+    mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
+) {
+    let (mut trans, velocity) = q_player.single_mut().expect("No Player Object");
+
+    let mut dir = Vec2::ZERO;
+    if inputs.pressed(KeyCode::ArrowLeft) {
+        dir.x -= 1.0;
+    }
+    if inputs.pressed(KeyCode::ArrowRight) {
+        dir.x += 1.0;
+    }
+    if inputs.pressed(KeyCode::ArrowUp) {
+        dir.y += 1.0;
+    }
+    if inputs.pressed(KeyCode::ArrowDown) {
+        dir.y -= 1.0;
+    }
+
+    if dir.length() < f32::EPSILON
+        && velocity.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
+    {
+        dir = velocity.linear_velocity;
+    }
+
+    if dir.length() > f32::EPSILON {
+        trans.rotation = trans
+            .rotation
+            .lerp(Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(dir)), 0.1);
     }
 }
 
@@ -212,6 +242,9 @@ pub(super) fn register(app: &mut App) {
     flashlight::register(app);
 
     app.add_systems(Startup, (setup /*load_profiles*/,));
-    app.add_systems(Update, player_input);
-    app.add_systems(PostUpdate, (apply_velocity, camera_follow_player).chain());
+    app.add_systems(Update, player_movement_input);
+    app.add_systems(
+        PostUpdate,
+        (apply_velocity, player_rotation_input, camera_follow_player).chain(),
+    );
 }
