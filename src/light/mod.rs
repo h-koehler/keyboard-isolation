@@ -13,8 +13,7 @@ pub struct IgnoreInLightCheckLight;
 fn check_in_light(
     q_check: Query<(Entity, &Transform, &CheckInLight), Without<IgnoreInLightCheckLight>>,
     q_light: Query<(Entity, &GlobalTransform, &PointLight2d), Without<IgnoreInLightCheckLight>>,
-    q_spotlight: Query<(&ChildOf, &SpotLight2d)>,
-    q_g_trans: Query<&GlobalTransform>,
+    q_spotlight: Query<(&GlobalTransform, &SpotLight2d)>,
     mut commands: Commands,
 ) {
     for (ent, check_trans, check) in q_check.iter() {
@@ -25,19 +24,10 @@ fn check_in_light(
             light.intensity != 0.0
                 && (trans.translation() - check_trans.translation).length()
                     < (light.outer_radius + check.0)
-        }) || q_spotlight.iter().any(|(child_of, light)| {
-            // if child_of.parent() == ent {
-            //     return false;
-            // }
-            let Ok(parent_trans) = q_g_trans.get(child_of.parent()) else {
-                return false;
-            };
+        }) || q_spotlight.iter().any(|(g_trans, light)| {
+            let moved_trans = /* parent_trans.rotation().inverse() * */ check_trans.translation;
+            let dotted = moved_trans.normalize_or_zero().dot(g_trans.left().into());
 
-            let dotted = (parent_trans.rotation().inverse() * check_trans.translation)
-                .normalize_or_zero()
-                .dot(parent_trans.translation().normalize_or_zero());
-
-            println!("{dotted} vs {}", light.outer_angle);
             dotted > (1.0 - light.outer_angle / 90.0)
         }) {
             commands.entity(ent).insert(InLight);
