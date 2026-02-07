@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy_lit::prelude::{PointLight2d, SpotLight2d};
 
 #[derive(Component, Reflect)]
+/// The pub f32 is the radius of the things you're checking
 pub struct CheckInLight(pub f32);
 
 #[derive(Component, Reflect)]

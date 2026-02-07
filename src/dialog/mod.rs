@@ -13,7 +13,7 @@ pub struct DialogNode;
 
 fn show_dialog_on_close(
     mut commands: Commands,
-    q_player: Query<(&Transform), With<Character>>,
+    q_player: Query<&Transform, With<Character>>,
     q_close: Query<(&Transform, &DialogOnClose, Entity)>,
     asset_server: Res<AssetServer>,
 ) {
@@ -39,4 +39,25 @@ fn show_dialog_on_close(
     // trans.translation
 }
 
-pub(super) fn register(app: &mut App) {}
+fn close_dialog_on_enter(
+    mut commands: Commands,
+    q_dialog: Query<Entity, With<DialogNode>>,
+    inputs: Res<ButtonInput<KeyCode>>,
+) {
+    let Ok(dialog_node) = q_dialog.single() else {
+        return;
+    };
+
+    if !(inputs.just_pressed(KeyCode::Enter) || inputs.just_pressed(KeyCode::NumpadEnter)) {
+        return;
+    }
+
+    commands.entity(dialog_node).despawn();
+}
+
+pub(super) fn register(app: &mut App) {
+    app.add_systems(
+        Update,
+        (close_dialog_on_enter, show_dialog_on_close).chain(),
+    );
+}
