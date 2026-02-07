@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use crate::room::Movable;
+use crate::{light::CheckInLight, room::Movable};
 use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
@@ -95,6 +95,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn((
             Character,
             Movable,
+            CheckInLight(45.0),
             Velocity::default(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
