@@ -1,6 +1,9 @@
 use std::f32::consts::PI;
 
-use crate::{light::CheckInLight, room::Movable};
+use crate::{
+    light::{CheckInLight, IgnoreInLightCheckLight},
+    room::Movable,
+};
 use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
@@ -93,6 +96,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn((
+            Name::new("Character"),
             Character,
             Movable,
             CheckInLight(45.0),
@@ -103,6 +107,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..Default::default()
             },
             Transform::from_translation(Vec3::Z * 3.0),
+            IgnoreInLightCheckLight,
             PointLight2d {
                 inner_radius: 0.0,
                 outer_radius: 48.0,

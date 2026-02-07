@@ -7,9 +7,12 @@ pub struct CheckInLight(pub f32);
 #[derive(Component, Reflect)]
 pub struct InLight;
 
+#[derive(Component)]
+pub struct IgnoreInLightCheckLight;
+
 fn check_in_light(
-    q_check: Query<(Entity, &Transform, &CheckInLight)>,
-    q_light: Query<(Entity, &GlobalTransform, &PointLight2d)>,
+    q_check: Query<(Entity, &Transform, &CheckInLight), Without<IgnoreInLightCheckLight>>,
+    q_light: Query<(Entity, &GlobalTransform, &PointLight2d), Without<IgnoreInLightCheckLight>>,
     q_spotlight: Query<(&ChildOf, &SpotLight2d)>,
     q_g_trans: Query<&GlobalTransform>,
     mut commands: Commands,
@@ -31,8 +34,11 @@ fn check_in_light(
             };
 
             let dotted = (parent_trans.rotation().inverse() * check_trans.translation)
-                .dot(parent_trans.translation());
-            dotted < light.outer_angle / 90.0
+                .normalize_or_zero()
+                .dot(parent_trans.translation().normalize_or_zero());
+
+            println!("{dotted} vs {}", light.outer_angle);
+            dotted > (1.0 - light.outer_angle / 90.0)
         }) {
             commands.entity(ent).insert(InLight);
         } else {
