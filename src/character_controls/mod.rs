@@ -1,5 +1,9 @@
-use crate::room::Movable;
-use bevy::{platform::collections::HashSet, prelude::*};
+use crate::{
+    light::{CheckInLight, IgnoreInLightCheckLight},
+    room::Movable,
+};
+use bevy::platform::collections::HashSet;
+use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
 const DEBUG_BRIGHTNESS: bool = false;
@@ -132,11 +136,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn((
+            Name::new("Character"),
             Character {
                 health: STARTING_HEALTH,
             },
             StatusEffects(HashSet::new()),
             Movable,
+            CheckInLight(45.0),
             Velocity::default(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
@@ -144,6 +150,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..Default::default()
             },
             Transform::from_translation(Vec3::Z * 3.0),
+            IgnoreInLightCheckLight,
             PointLight2d {
                 inner_radius: 0.0,
                 outer_radius: 48.0,
