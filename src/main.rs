@@ -1,5 +1,6 @@
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_light_2d::prelude::*;
 
 use crate::{
     room::{ROOM_HEIGHT, ROOM_WIDTH},
@@ -12,7 +13,7 @@ pub mod ui;
 
 fn main() {
     let mut app = App::new();
-        app.add_plugins(
+    app.add_plugins((
         DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 resolution: WindowResolution::new(ROOM_WIDTH, ROOM_HEIGHT + UI_HEIGHT as u32)
@@ -22,12 +23,13 @@ fn main() {
             }),
             ..Default::default()
         }),
-    )
+        Light2dPlugin,
+    ))
     .add_plugins(EguiPlugin::default())
     .add_plugins(WorldInspectorPlugin::default());
     character_controls::register(&mut app);
     room::register(&mut app);
     ui::register(&mut app);
-    
+
     app.run();
 }
