@@ -4,6 +4,7 @@ use bevy_lit::prelude::*;
 
 const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
+const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
 // const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
 // const ROOM_INSET: f32 = 4.0;
@@ -18,9 +19,9 @@ pub struct Velocity {
 
 fn player_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Transform, &mut Velocity), With<Character>>,
+    mut q_player: Query<&mut Velocity, With<Character>>,
 ) {
-    let (mut trans, mut char_vel) = q_player.single_mut().expect("No Player Object");
+    let mut char_vel = q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::KeyA) {
         dir.x -= 1.0;
@@ -35,7 +36,6 @@ fn player_input(
         dir.y -= 1.0;
     }
     dir = dir.normalize_or_zero();
-    trans.rotation = Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(dir));
     char_vel.linear_velocity = char_vel.linear_velocity.lerp(dir * MOVE_SPEED, 0.5);
 }
 
@@ -47,6 +47,10 @@ fn apply_velocity(
     for (mut trans, vel) in q_player.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
+
+        if vel.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE {
+            trans.rotation = Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(vel.linear_velocity));
+        }
 
         // let half_width = ROOM_WIDTH as f32 / 2.0;
         // let half_height = ROOM_HEIGHT as f32 / 2.0;
