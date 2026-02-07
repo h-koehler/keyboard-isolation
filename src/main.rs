@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod character_controls;
+pub mod checkpoint;
 pub mod dialog;
 pub mod enemies;
 pub mod light;
@@ -38,6 +39,7 @@ fn main() {
     sanity::register(&mut app);
     light::register(&mut app);
     dialog::register(&mut app);
+    checkpoint::register(&mut app);
 
     app.run();
 }
