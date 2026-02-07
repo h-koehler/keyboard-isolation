@@ -1,5 +1,6 @@
 use crate::{
-    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH}, ui::UI_HEIGHT
+    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
+    ui::UI_HEIGHT,
 };
 use bevy::prelude::*;
 
@@ -8,9 +9,12 @@ const VELOCITY_CHANGE: f32 = 1.0;
 const PLAYER_ASS_PATH: &str = "player.png";
 const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
 const ROOM_INSET: f32 = 4.0;
+const STARTING_HEALTH: i8 = 3;
 
 #[derive(Component)]
-pub struct Character;
+pub struct Character {
+    pub health: i8,
+}
 
 #[derive(Component, Default)]
 pub struct Velocity {
@@ -79,11 +83,31 @@ fn apply_velocity(
     }
 }
 
+fn take_damage(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health > 0 {
+        player.health -= 1;
+    } else {
+        println!("Can't take any more damage.")
+    }
+}
+
+fn heal(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health < STARTING_HEALTH {
+        player.health += 1;
+    } else {
+        println!("Can't heal any more lives.")
+    }
+}
+
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((Camera2d::default(),));
 
     commands.spawn((
-        Character,
+        Character {
+            health: STARTING_HEALTH,
+        },
         Movable,
         Velocity::default(),
         Sprite {
