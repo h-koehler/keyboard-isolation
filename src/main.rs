@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod character_controls;
+pub mod enemies;
 pub mod room;
 pub mod ui;
 
@@ -30,6 +31,7 @@ fn main() {
     character_controls::register(&mut app);
     room::register(&mut app);
     ui::register(&mut app);
+    enemies::register(&mut app);
 
     app.run();
 }

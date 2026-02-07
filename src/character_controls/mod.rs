@@ -5,6 +5,7 @@ use crate::{
 use bevy::prelude::*;
 use bevy_light_2d::prelude::*;
 
+const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
 const VELOCITY_CHANGE: f32 = 1.0;
 const PLAYER_ASS_PATH: &str = "player.png";
@@ -51,16 +52,12 @@ fn player_input(
 
 fn apply_velocity(
     time: Res<Time>,
-    mut q_player: Query<(&mut Transform, &Velocity, Has<Character>)>,
+    mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
 ) {
     let dt = time.delta_secs();
-    for (mut trans, vel, is_player) in q_player.iter_mut() {
+    for (mut trans, vel) in q_player.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
-
-        if !is_player {
-            continue;
-        }
 
         let half_width = ROOM_WIDTH as f32 / 2.0;
         let half_height = ROOM_HEIGHT as f32 / 2.0;
@@ -86,7 +83,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         Camera2d::default(),
         Light2d {
             ambient_light: AmbientLight2d {
-                brightness: 0.0, // More like darkness amiright
+                brightness: if DEBUG_BRIGHTNESS { 0.1 } else { 0.0 }, // More like darkness amiright
                 ..default()
             },
         },
