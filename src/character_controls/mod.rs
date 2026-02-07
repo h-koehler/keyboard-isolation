@@ -2,7 +2,7 @@ use crate::{
     room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
     ui::UI_HEIGHT,
 };
-use bevy::prelude::*;
+use bevy::{platform::collections::HashSet, prelude::*};
 use bevy_light_2d::prelude::*;
 
 const MOVE_SPEED: f32 = 200.0;
@@ -10,11 +10,34 @@ const VELOCITY_CHANGE: f32 = 1.0;
 const PLAYER_ASS_PATH: &str = "player.png";
 const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
 const ROOM_INSET: f32 = 4.0;
-const STARTING_HEALTH: i8 = 3;
+pub const STARTING_HEALTH: i8 = 3;
 
 #[derive(Component)]
 pub struct Character {
     pub health: i8,
+}
+
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub enum StatusEffect {
+    Slowed,
+    Blind,
+}
+
+#[derive(Component)]
+pub struct StatusEffects(HashSet<StatusEffect>);
+
+impl StatusEffects {
+    pub fn add_effect(&mut self, status_effect: StatusEffect) {
+        self.0.insert(status_effect);
+    }
+
+    pub fn remove_effect(&mut self, status_effect: StatusEffect) {
+        self.0.remove(&status_effect);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = StatusEffect> {
+        self.0.iter().copied()
+    }
 }
 
 #[derive(Component, Default)]
@@ -117,6 +140,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         Character {
             health: STARTING_HEALTH,
         },
+        StatusEffects(HashSet::new()),
         Movable,
         Velocity::default(),
         Sprite {
