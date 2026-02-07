@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{color::palettes::css, prelude::*};
 
 use crate::character_controls::Character;
 
@@ -49,6 +49,66 @@ fn clamp_sanity_to_max(mut q_sanity: Query<(&mut Sanity, &SanityBlockers)>) {
     }
 }
 
+#[derive(Component)]
+struct SanityBar;
+
+fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands
+        .spawn((
+            Node {
+                top: Val::Px(50.0),
+                left: Val::Px(50.0),
+                width: Val::Px(300.0),
+                height: Val::Px(50.0),
+                ..Default::default()
+            },
+            ImageNode {
+                image: asset_server.load("sanity_bar.png"),
+                ..Default::default()
+            },
+            Name::new("Sanity Bar"),
+        ))
+        .with_children(|p| {
+            p.spawn((
+                SanityBar,
+                Node {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                    ..Default::default()
+                },
+                BackgroundColor(css::MEDIUM_PURPLE.into()),
+            ));
+        });
+}
+
+fn update_sanity_bar(
+    q_sanity: Query<&Sanity>,
+    mut q_sanity_bar: Query<(&mut BackgroundColor, &mut Node), With<SanityBar>>,
+) {
+    let Ok(sanity) = q_sanity.single() else {
+        return;
+    };
+
+    let Ok((mut bg, mut node)) = q_sanity_bar.single_mut() else {
+        return;
+    };
+
+    node.width = Val::Percent(sanity.0);
+
+    bg.0 = if sanity.0 >= 75.0 {
+        css::WHITE
+    } else if sanity.0 >= 25.0 {
+        css::PURPLE
+    } else {
+        css::RED
+    }
+    .into();
+}
+
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Update, (add_sanity, clamp_sanity_to_max).chain());
+    app.add_systems(
+        Update,
+        (add_sanity, clamp_sanity_to_max, update_sanity_bar).chain(),
+    )
+    .add_systems(Startup, add_sanity_bar);
 }
