@@ -1,51 +1,73 @@
-use std::f32::consts::PI;
-
 use crate::{
-    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
-    ui::UI_HEIGHT,
+    character_controls::flashlight::Flashlight,
+    light::{CheckInLight, IgnoreInLightCheckLight},
+    room::Movable,
 };
+use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use bevy_lit::prelude::*;
 
-const DEBUG_BRIGHTNESS: bool = true;
+pub mod flashlight;
+
+const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
-const VELOCITY_CHANGE: f32 = 1.0;
+const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
-const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
-const ROOM_INSET: f32 = 4.0;
+pub const STARTING_HEALTH: i8 = 3;
+// const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
+// const ROOM_INSET: f32 = 4.0;
 
 #[derive(Component)]
-pub struct Character;
+pub struct Character {
+    pub health: i8,
+}
+
+#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+pub enum StatusEffect {
+    Slowed,
+    Blind,
+}
+
+#[derive(Component)]
+pub struct StatusEffects(HashSet<StatusEffect>);
+
+impl StatusEffects {
+    pub fn add_effect(&mut self, status_effect: StatusEffect) {
+        self.0.insert(status_effect);
+    }
+
+    pub fn remove_effect(&mut self, status_effect: StatusEffect) {
+        self.0.remove(&status_effect);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = StatusEffect> {
+        self.0.iter().copied()
+    }
+}
 
 #[derive(Component, Default)]
 pub struct Velocity {
     pub linear_velocity: Vec2,
 }
 
-fn player_input(
+fn player_movement_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Transform, &mut Velocity), With<Character>>,
+    mut q_player: Query<&mut Velocity, With<Character>>,
 ) {
-    let (mut trans, mut char_vel) = q_player.single_mut().expect("No Player Object");
+    let mut char_vel = q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
-
     if inputs.pressed(KeyCode::KeyA) {
-        dir.x -= VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, PI / 2.0);
+        dir.x -= 1.0;
     }
     if inputs.pressed(KeyCode::KeyD) {
-        dir.x += VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, -PI / 2.0);
+        dir.x += 1.0;
     }
     if inputs.pressed(KeyCode::KeyW) {
-        dir.y += VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, 0.0);
+        dir.y += 1.0;
     }
     if inputs.pressed(KeyCode::KeyS) {
-        dir.y -= VELOCITY_CHANGE;
-        trans.rotation = Quat::from_axis_angle(Vec3::Z, PI);
+        dir.y -= 1.0;
     }
-
     char_vel.linear_velocity = char_vel
         .linear_velocity
         .lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
@@ -60,27 +82,75 @@ fn apply_velocity(
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
 
-        let half_width = ROOM_WIDTH as f32 / 2.0;
-        let half_height = ROOM_HEIGHT as f32 / 2.0;
+        // let half_width = ROOM_WIDTH as f32 / 2.0;
+        // let half_height = ROOM_HEIGHT as f32 / 2.0;
+        //
+        // let (half_player_width, half_player_height) = if let Some(size) = PLAYER_SIZE {
+        //     (size.x * 0.5, size.y * 0.5)
+        // } else {
+        //     (50.0, 50.0)
+        // };
 
-        let (half_player_width, half_player_height) = if let Some(size) = PLAYER_SIZE {
-            (size.x * 0.5, size.y * 0.5)
-        } else {
-            (50.0, 50.0)
-        };
-
-        let min_x = -half_width + half_player_width + ROOM_INSET;
-        let max_x = half_width - half_player_width - ROOM_INSET;
-        let min_y = UI_HEIGHT / 2.0 + -half_height + half_player_height + ROOM_INSET;
-        let max_y = UI_HEIGHT / 2.0 + half_height - half_player_height - ROOM_INSET;
-
-        trans.translation.x = trans.translation.x.clamp(min_x, max_x);
-        trans.translation.y = trans.translation.y.clamp(min_y, max_y);
+        // let min_x = -half_width + half_player_width + ROOM_INSET;
+        // let max_x = half_width - half_player_width - ROOM_INSET;
+        // let min_y = UI_HEIGHT / 2.0 + -half_height + half_player_height + ROOM_INSET;
+        // let max_y = UI_HEIGHT / 2.0 + half_height - half_player_height - ROOM_INSET;
+        //
+        // trans.translation.x = trans.translation.x.clamp(min_x, max_x);
+        // trans.translation.y = trans.translation.y.clamp(min_y, max_y);
     }
 }
 
-#[derive(Component)]
-pub struct Flashlight;
+fn player_rotation_input(
+    inputs: Res<ButtonInput<KeyCode>>,
+    mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
+) {
+    let (mut trans, velocity) = q_player.single_mut().expect("No Player Object");
+
+    let mut dir = Vec2::ZERO;
+    if inputs.pressed(KeyCode::ArrowLeft) {
+        dir.x -= 1.0;
+    }
+    if inputs.pressed(KeyCode::ArrowRight) {
+        dir.x += 1.0;
+    }
+    if inputs.pressed(KeyCode::ArrowUp) {
+        dir.y += 1.0;
+    }
+    if inputs.pressed(KeyCode::ArrowDown) {
+        dir.y -= 1.0;
+    }
+
+    if dir.length() < f32::EPSILON
+        && velocity.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
+    {
+        dir = velocity.linear_velocity;
+    }
+
+    if dir.length() > f32::EPSILON {
+        trans.rotation = trans
+            .rotation
+            .lerp(Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(dir)), 0.1);
+    }
+}
+
+fn take_damage(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health > 0 {
+        player.health -= 1;
+    } else {
+        println!("Can't take any more damage.")
+    }
+}
+
+fn heal(mut q_player: Query<&mut Character>) {
+    let mut player = q_player.single_mut().expect("No Player Object");
+    if player.health < STARTING_HEALTH {
+        player.health += 1;
+    } else {
+        println!("Can't heal any more lives.")
+    }
+}
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
@@ -96,8 +166,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn((
-            Character,
+            Name::new("Character"),
+            Character {
+                health: STARTING_HEALTH,
+            },
+            StatusEffects(HashSet::new()),
             Movable,
+            CheckInLight(45.0),
             Velocity::default(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
@@ -105,6 +180,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..Default::default()
             },
             Transform::from_translation(Vec3::Z * 3.0),
+            IgnoreInLightCheckLight,
             PointLight2d {
                 inner_radius: 0.0,
                 outer_radius: 48.0,
@@ -115,15 +191,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         ))
         .with_children(|p| {
             p.spawn((
-                Flashlight,
+                Flashlight {
+                    battery: 60.0,
+                    max_charge: 60.0,
+                },
                 SpotLight2d {
-                    intensity: 1.0,
+                    intensity: 0.0,
                     outer_radius: 1024.0,
                     outer_angle: 25.0,
                     ..default()
                 },
-                Transform::from_xyz(0.0, 0.0, 0.0)
-                    .with_rotation(Quat::from_rotation_z(90_f32.to_radians())),
             ));
         });
 }
@@ -145,8 +222,29 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 //     // });
 // }
 
+fn camera_follow_player(
+    mut q_cam: Query<&mut Transform, With<Camera2d>>,
+    q_player: Query<(&Transform, &Velocity), (With<Character>, Without<Camera2d>)>,
+) {
+    let Ok((player_trans, player_vel)) = q_player.single() else {
+        return;
+    };
+    for mut trans in q_cam.iter_mut() {
+        let lerpped = trans.translation.lerp(
+            player_trans.translation + player_vel.linear_velocity.extend(0.0) * 0.1,
+            0.1,
+        );
+        trans.translation = Vec3::new(lerpped.x, lerpped.y, trans.translation.z);
+    }
+}
+
 pub(super) fn register(app: &mut App) {
+    flashlight::register(app);
+
     app.add_systems(Startup, (setup /*load_profiles*/,));
-    app.add_systems(Update, player_input);
-    app.add_systems(PostUpdate, apply_velocity);
+    app.add_systems(Update, player_movement_input);
+    app.add_systems(
+        PostUpdate,
+        (apply_velocity, player_rotation_input, camera_follow_player).chain(),
+    );
 }

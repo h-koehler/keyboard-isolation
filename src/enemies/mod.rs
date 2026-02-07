@@ -1,5 +1,6 @@
 use crate::{
     character_controls::Character,
+    light::CheckInLight,
     room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
     ui::UI_HEIGHT,
 };
@@ -24,6 +25,8 @@ pub struct StalkPlayer {
 
 fn alien(asset_server: &AssetServer) -> impl Bundle {
     (
+        Name::new("Enemy"),
+        CheckInLight(45.0),
         Enemy,
         Movable,
         Velocity::default(),
