@@ -1,6 +1,13 @@
-use crate::room::Movable;
-use bevy::{platform::collections::HashSet, prelude::*};
+use crate::{
+    character_controls::flashlight::Flashlight,
+    light::{CheckInLight, IgnoreInLightCheckLight},
+    room::Movable,
+};
+use bevy::platform::collections::HashSet;
+use bevy::prelude::*;
 use bevy_lit::prelude::*;
+
+pub mod flashlight;
 
 const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
@@ -145,9 +152,6 @@ fn heal(mut q_player: Query<&mut Character>) {
     }
 }
 
-#[derive(Component)]
-pub struct Flashlight;
-
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Camera2d::default(),
@@ -162,11 +166,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn((
+            Name::new("Character"),
             Character {
                 health: STARTING_HEALTH,
             },
             StatusEffects(HashSet::new()),
             Movable,
+            CheckInLight(45.0),
             Velocity::default(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
@@ -174,6 +180,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..Default::default()
             },
             Transform::from_translation(Vec3::Z * 3.0),
+            IgnoreInLightCheckLight,
             PointLight2d {
                 inner_radius: 0.0,
                 outer_radius: 48.0,
@@ -184,9 +191,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         ))
         .with_children(|p| {
             p.spawn((
-                Flashlight,
+                Flashlight {
+                    battery: 60.0,
+                    max_charge: 60.0,
+                },
                 SpotLight2d {
-                    intensity: 1.0,
+                    intensity: 0.0,
                     outer_radius: 1024.0,
                     outer_angle: 25.0,
                     ..default()
@@ -229,6 +239,8 @@ fn camera_follow_player(
 }
 
 pub(super) fn register(app: &mut App) {
+    flashlight::register(app);
+
     app.add_systems(Startup, (setup /*load_profiles*/,));
     app.add_systems(Update, player_movement_input);
     app.add_systems(
