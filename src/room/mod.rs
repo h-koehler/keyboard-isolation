@@ -15,11 +15,11 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Name::new("Background"),
         Sprite {
-            custom_size: Some(Vec2::new(ROOM_WIDTH as f32, ROOM_HEIGHT as f32)),
+            // custom_size: Some(Vec2::new(ROOM_WIDTH as f32, ROOM_HEIGHT as f32)),
             image: asset_server.load("background.png"),
             ..Default::default()
         },
-        Transform::from_translation(Vec3::new(0.0, UI_HEIGHT / 2.0, -10.0)),
+        Transform::from_translation(Vec3::new(0.0, UI_HEIGHT / 2.0, -10.0)).with_scale(Vec3::splat(10.0)),
     ));
 
 }
