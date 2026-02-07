@@ -27,7 +27,7 @@ fn on_add_checkpoint(mut commands: Commands, q_check: Query<Entity, Added<Checkp
     }
 }
 
-const BLINK_INTERVAL_SECS: f32 = 10.0;
+const BLINK_INTERVAL_SECS: f32 = 5.0;
 
 fn blink_checkpoint(
     time: Res<Time>,
