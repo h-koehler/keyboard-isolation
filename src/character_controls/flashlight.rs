@@ -22,8 +22,8 @@ pub fn update_flashlight(
     for (ent, mut flashlight, mut spotlight) in q_flashlight.iter_mut() {
         if enabled && flashlight.battery > 0.0 {
             flashlight.battery -= time.delta_secs();
-            spotlight.intensity = 1.0;
             flashlight.battery = flashlight.battery.max(0.0);
+            spotlight.intensity = (flashlight.battery / (flashlight.max_charge * 0.05)).min(1.0);
             commands.entity(ent).insert(FlashlightActive);
         } else {
             spotlight.intensity = 0.0;
