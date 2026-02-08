@@ -8,6 +8,7 @@ use crate::{
 };
 
 pub mod animation;
+pub mod assets;
 pub mod character_controls;
 pub mod checkpoint;
 pub mod dialog;
@@ -48,6 +49,7 @@ fn main() {
     dialog::register(&mut app);
     checkpoint::register(&mut app);
     animation::register(&mut app);
+    assets::register(&mut app);
 
     app.run();
 }
