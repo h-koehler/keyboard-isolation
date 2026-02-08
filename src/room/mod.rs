@@ -2,10 +2,10 @@ use bevy::prelude::*;
 use bevy_lit::prelude::PointLight2d;
 
 use crate::{
-    animation::AnimateSprite,
+    animation::{AnimateSprite, AnimationState},
     assets::{LoadAssetsSet, load_atlas},
+    collision::room_objects::spawn_crash_site_objects,
     ui::UI_HEIGHT,
-    collision::room_objects::spawn_crash_site_objects
 };
 
 #[derive(Component)]
@@ -20,6 +20,7 @@ pub const ROOM_WIDTH: u32 = 1100;
 fn fire(fire_asset: &FireAsset) -> impl Bundle {
     (
         AnimateSprite { fps: 10 },
+        AnimationState::new(rand::random_range(0..7)),
         PointLight2d {
             inner_radius: 0.0,
             outer_radius: 400.0,
@@ -54,7 +55,45 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset
             .with_scale(Vec3::splat(4.0)),
     ));
 
-    commands.spawn((Transform::from_xyz(0.0, 100.0, 0.0), fire(&fire_asset)));
+    // [0,700],[0,200]
+    commands.spawn((
+        Transform::from_xyz(0.0, 100.0, 0.0).with_scale(Vec3::splat(5.0)),
+        fire(&fire_asset),
+    ));
+    commands.spawn((
+        Transform::from_xyz(50.0, 11.0, 0.0).with_scale(Vec3::splat(4.0)),
+        fire(&fire_asset),
+    ));
+    commands.spawn((
+        Transform::from_xyz(300.0, 150.0, 0.0).with_scale(Vec3::splat(3.0)),
+        fire(&fire_asset),
+    ));
+    commands.spawn((
+        Transform::from_xyz(350.0, 130.0, 0.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset),
+    ));
+    commands.spawn((
+        Transform::from_xyz(250.0, 140.0, 0.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset),
+    ));
+    commands.spawn((
+        Transform::from_xyz(320.0, 100.0, 0.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset),
+    ));
+
+    commands.spawn((
+        Transform::from_xyz(700.0, 50.0, 0.0).with_scale(Vec3::splat(4.5)),
+        fire(&fire_asset),
+    ));
+    commands.spawn((
+        Transform::from_xyz(450.0, 30.0, 0.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset),
+    ));
+    commands.spawn((
+        Transform::from_xyz(800.0, 138.0, 0.0).with_scale(Vec3::splat(1.0)),
+        fire(&fire_asset),
+    ));
+
     commands.spawn((Transform::from_xyz(100.0, 100.0, 0.0), fire(&fire_asset)));
     commands.spawn((Transform::from_xyz(200.0, 400.0, 0.0), fire(&fire_asset)));
     commands.spawn((Transform::from_xyz(100.0, -100.0, 0.0), fire(&fire_asset)));

@@ -16,7 +16,7 @@ use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = true;
+const DEBUG_BRIGHTNESS: bool = false;
 const BASE_MOVE_SPEED: f32 = 200.0;
 const SLOWED_MULTIPLIER: f32 = 0.7;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
@@ -161,6 +161,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn((
             Camera2d::default(),
             Lighting2dSettings {
+                penetration: PenetrationSettings {
+                    max: 30.0,
+                    intensity: 1.0,
+                    falloff: 1.0,
+                    sample_directions: 16,
+                    sample_steps: 8,
+                },
                 ..Default::default()
             },
             AmbientLight2d {
@@ -177,6 +184,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             Character {
                 health: STARTING_HEALTH,
             },
+            // Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+            // LightOccluder2d {
+            //     occluder_mask: asset_server.load(PLAYER_ASS_PATH),
+            // },
             (
                 Sanity::default(),
                 CheckInLight(32.0),

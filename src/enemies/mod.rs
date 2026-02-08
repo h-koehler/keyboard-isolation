@@ -4,6 +4,7 @@ use crate::{
     room::Movable,
 };
 use bevy::prelude::*;
+use bevy_lit::prelude::LightOccluder2d;
 use rand::Rng;
 use std::f32::consts::FRAC_PI_2;
 
@@ -54,7 +55,7 @@ pub struct Stalk {
     radius: f32,
 }
 
-pub fn alien(asset_server: &AssetServer) -> impl Bundle {
+fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Alien"),
         Movable,
@@ -76,6 +77,10 @@ pub fn alien(asset_server: &AssetServer) -> impl Bundle {
                 change_direction_chance: 0.01,
             },
         },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("alien.png"),
+        },
         Sprite {
             image: asset_server.load("alien.png"),
             custom_size: Some(Vec2::splat(45.0)),
@@ -84,7 +89,7 @@ pub fn alien(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-pub fn stalker(asset_server: &AssetServer) -> impl Bundle {
+fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Stalker"),
         Movable,
@@ -102,6 +107,10 @@ pub fn stalker(asset_server: &AssetServer) -> impl Bundle {
                 change_direction_chance: 0.05,
             },
         },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("stalker.png"),
+        },
         Sprite {
             image: asset_server.load("stalker.png"),
             custom_size: Some(Vec2::splat(45.0)),
@@ -110,7 +119,7 @@ pub fn stalker(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-pub fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
+fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Teleporting Alien"),
         Movable,
@@ -136,6 +145,10 @@ pub fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
                 distance: 500.0,
                 chance: 0.03,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("teleporting_alien.png"),
         },
         Sprite {
             image: asset_server.load("teleporting_alien.png"),

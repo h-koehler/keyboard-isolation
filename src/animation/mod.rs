@@ -14,6 +14,14 @@ pub struct AnimationState {
 }
 
 impl AnimationState {
+    pub fn new(frame: u32) -> Self {
+        AnimationState {
+            frozen: false,
+            time: 0.0,
+            frame,
+        }
+    }
+
     pub fn pause(&mut self) {
         self.frozen = true;
     }
