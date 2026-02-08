@@ -48,6 +48,8 @@ fn show_dialog_on_close(
                     min_height: Val::Px(300.0),
                     padding: UiRect::all(Val::Px(10.0)),
                     border: UiRect::all(Val::Px(1.0)),
+                    justify_content: JustifyContent::SpaceBetween,
+                    flex_direction: FlexDirection::Column,
                     ..Default::default()
                 },
             ))
@@ -57,6 +59,15 @@ fn show_dialog_on_close(
                     TextFont {
                         font: asset_server.load("fonts/default.ttf"),
                         font_size: 42.0,
+                        ..Default::default()
+                    },
+                ));
+
+                p.spawn((
+                    Text::new("<enter to close>"),
+                    TextFont {
+                        font: asset_server.load("fonts/default.ttf"),
+                        font_size: 18.0,
                         ..Default::default()
                     },
                 ));
