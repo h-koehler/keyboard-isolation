@@ -1,5 +1,6 @@
 use crate::{
     character_controls::flashlight::Flashlight,
+    items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
 };
@@ -154,6 +155,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 health: STARTING_HEALTH,
             },
             StatusEffects(HashSet::new()),
+            CollectedItems(HashSet::new()),
             Movable,
             CheckInLight(1.0),
             Velocity::default(),

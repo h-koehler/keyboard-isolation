@@ -12,6 +12,7 @@ pub mod checkpoint;
 pub mod dialog;
 pub mod dog;
 pub mod enemies;
+pub mod items;
 pub mod light;
 pub mod room;
 pub mod sanity;
@@ -38,6 +39,7 @@ fn main() {
     ui::register(&mut app);
     enemies::register(&mut app);
     dog::register(&mut app);
+    items::register(&mut app);
     sanity::register(&mut app);
     light::register(&mut app);
     dialog::register(&mut app);
