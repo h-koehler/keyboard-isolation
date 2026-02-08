@@ -6,7 +6,7 @@ use crate::items::{CollectedItems, Item};
 #[derive(Component)]
 pub struct FlashlightActive;
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 pub struct Flashlight {
     /// Seconds of battery life remaining
     pub battery: f32,
