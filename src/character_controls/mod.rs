@@ -9,15 +9,16 @@ use crate::{
     win::{CurrentState, GameState},
     y_sort::YSort,
 };
-use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
+use bevy::{platform::collections::HashSet, time::Stopwatch};
 use bevy_kira_audio::SpatialAudioReceiver;
 use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = true;
-const MOVE_SPEED: f32 = 200.0;
+const DEBUG_BRIGHTNESS: bool = false;
+const BASE_MOVE_SPEED: f32 = 200.0;
+const SLOWED_MULTIPLIER: f32 = 0.7;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
 pub const STARTING_HEALTH: i8 = 3;
@@ -43,6 +44,11 @@ impl Character {
     }
 }
 
+#[derive(Component)]
+pub struct SpawnEnemies {
+    pub stopwatch: Stopwatch,
+}
+
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
 pub enum StatusEffect {
     Slowed,
@@ -52,7 +58,7 @@ pub enum StatusEffect {
 }
 
 #[derive(Component)]
-pub struct StatusEffects(HashSet<StatusEffect>);
+pub struct StatusEffects(pub HashSet<StatusEffect>);
 
 impl StatusEffects {
     pub fn add_effect(&mut self, status_effect: StatusEffect) {
@@ -73,11 +79,19 @@ pub struct Velocity {
     pub linear_velocity: Vec2,
 }
 
+fn get_speed(status_effects: &StatusEffects) -> f32 {
+    if status_effects.0.contains(&StatusEffect::Slowed) {
+        BASE_MOVE_SPEED * SLOWED_MULTIPLIER
+    } else {
+        BASE_MOVE_SPEED
+    }
+}
+
 fn player_movement_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<&mut Velocity, With<Character>>,
+    mut q_player: Query<(&mut Velocity, &StatusEffects), With<Character>>,
 ) {
-    let mut char_vel = q_player.single_mut().expect("No Player Object");
+    let (mut char_vel, status_effects) = q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::KeyA) {
         dir.x -= 1.0;
@@ -91,9 +105,10 @@ fn player_movement_input(
     if inputs.pressed(KeyCode::KeyS) {
         dir.y -= 1.0;
     }
+    let speed = get_speed(status_effects);
     char_vel.linear_velocity = char_vel
         .linear_velocity
-        .lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
+        .lerp(dir.normalize_or_zero() * speed, 0.5);
 }
 
 pub(crate) fn apply_velocity(
@@ -109,9 +124,9 @@ pub(crate) fn apply_velocity(
 
 fn player_rotation_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
+    mut q_player: Query<(&mut Transform, &Velocity, &StatusEffects), With<Character>>,
 ) {
-    let (mut trans, velocity) = q_player.single_mut().expect("No Player Object");
+    let (mut trans, velocity, status_effects) = q_player.single_mut().expect("No Player Object");
 
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::ArrowLeft) {
@@ -128,7 +143,8 @@ fn player_rotation_input(
     }
 
     if dir.length() < f32::EPSILON
-        && velocity.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
+        && velocity.linear_velocity.length()
+            > get_speed(status_effects) * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
     {
         dir = velocity.linear_velocity;
     }
@@ -145,6 +161,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn((
             Camera2d::default(),
             Lighting2dSettings {
+                penetration: PenetrationSettings {
+                    max: 30.0,
+                    intensity: 1.0,
+                    falloff: 1.0,
+                    sample_directions: 16,
+                    sample_steps: 8,
+                },
                 ..Default::default()
             },
             AmbientLight2d {
@@ -161,6 +184,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             Character {
                 health: STARTING_HEALTH,
             },
+            // Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+            // LightOccluder2d {
+            //     occluder_mask: asset_server.load(PLAYER_ASS_PATH),
+            // },
             (
                 Sanity::default(),
                 CheckInLight(32.0),
@@ -186,6 +213,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             },
             CurrentState(GameState::Collecting),
+            SpawnEnemies {
+                stopwatch: Stopwatch::new(),
+            },
         ))
         .with_children(|p| {
             p.spawn((

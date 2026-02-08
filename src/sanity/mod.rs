@@ -2,12 +2,14 @@ use std::time::Duration;
 
 use bevy::{color::palettes::css, prelude::*};
 
+use crate::character_controls::{StatusEffect, StatusEffects};
+
 pub mod body;
 pub mod player_sanity;
 
 #[derive(Component, Debug, PartialEq, PartialOrd, Reflect)]
 #[require(SanityBlockers, SanityAmplifiers)]
-pub struct Sanity(f32);
+pub struct Sanity(pub f32);
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Reflect)]
 pub struct SanityBlocker {
@@ -77,8 +79,18 @@ impl Sanity {
         self.0 = self.0.clamp(0.0, blockers.maximum_sanity().0);
     }
 
-    pub fn decrease_sanity(&mut self, amount_to_remove: f32, amplifiers: &SanityAmplifiers) {
-        *self = Self::new(self.0 - amount_to_remove * amplifiers.multiplier());
+    pub fn decrease_sanity(
+        &mut self,
+        amount_to_remove: f32,
+        amplifiers: &SanityAmplifiers,
+        status_effects: &StatusEffects,
+    ) {
+        let stalked_multiplier = if status_effects.0.contains(&StatusEffect::Stalked) {
+            2.0
+        } else {
+            1.0
+        };
+        *self = Self::new(self.0 - amount_to_remove * amplifiers.multiplier() * stalked_multiplier);
     }
 
     pub fn increase_sanity(
@@ -86,9 +98,15 @@ impl Sanity {
         amount_to_increase: f32,
         amplifiers: &SanityAmplifiers,
         blockers: &SanityBlockers,
+        status_effects: &StatusEffects,
     ) {
+        let stalked_multiplier = if status_effects.0.contains(&StatusEffect::Stalked) {
+            0.5
+        } else {
+            1.0
+        };
         *self = Self::new(
-            (self.0 + amount_to_increase * amplifiers.multiplier())
+            (self.0 + amount_to_increase * amplifiers.multiplier() * stalked_multiplier)
                 .min(blockers.maximum_sanity().0),
         );
     }

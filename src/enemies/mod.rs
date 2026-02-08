@@ -1,9 +1,10 @@
 use crate::{
     character_controls::{Character, StatusEffect, StatusEffects},
-    light::{CheckInLight, InLight},
+    light::InLight,
     room::Movable,
 };
 use bevy::prelude::*;
+use bevy_lit::prelude::LightOccluder2d;
 use rand::Rng;
 use std::f32::consts::FRAC_PI_2;
 
@@ -54,10 +55,9 @@ pub struct Stalk {
     radius: f32,
 }
 
-fn alien(asset_server: &AssetServer) -> impl Bundle {
+pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Alien"),
-        Enemy,
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -70,13 +70,16 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
             inflicts_status: Some(StatusEffect::Slowed),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
-        CheckInLight(45.0),
         FleeLight {
             action: FleeAction::Walk {
                 speed: 300.0,
                 maybe_direction: None,
                 change_direction_chance: 0.01,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("alien.png"),
         },
         Sprite {
             image: asset_server.load("alien.png"),
@@ -86,9 +89,9 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-fn stalker(asset_server: &AssetServer) -> impl Bundle {
+pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
-        Enemy,
+        Name::new("Stalker"),
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -96,7 +99,6 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
             min_radius: 300.0,
             speed: 20.0,
         },
-        CheckInLight(45.0),
         Stalk { radius: 350.0 },
         FleeLight {
             action: FleeAction::Walk {
@@ -104,6 +106,10 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
                 maybe_direction: None,
                 change_direction_chance: 0.05,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("stalker.png"),
         },
         Sprite {
             image: asset_server.load("stalker.png"),
@@ -113,10 +119,9 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
+pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Teleporting Alien"),
-        Enemy,
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -135,12 +140,15 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
             inflicts_status: Some(StatusEffect::Blind),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
-        CheckInLight(45.0),
         FleeLight {
             action: FleeAction::Teleport {
                 distance: 500.0,
-                chance: 0.01,
+                chance: 0.03,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("teleporting_alien.png"),
         },
         Sprite {
             image: asset_server.load("teleporting_alien.png"),
@@ -306,23 +314,7 @@ fn apply_velocity(time: Res<Time>, mut q_enemies: Query<(&mut Transform, &Veloci
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((
-        alien(&asset_server),
-        Transform::from_translation(Vec3::new(-600.0, 350.0, 3.0)),
-    ));
-    commands.spawn((
-        stalker(&asset_server),
-        Transform::from_translation(Vec3::new(500.0, -50.0, 3.0)),
-    ));
-    commands.spawn((
-        teleporting_alien(&asset_server),
-        Transform::from_translation(Vec3::new(50.0, -400.0, 3.0)),
-    ));
-}
-
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
     app.add_systems(
         Update,
         (
