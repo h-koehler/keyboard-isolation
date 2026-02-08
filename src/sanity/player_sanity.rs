@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    character_controls::{Character, StatusEffect, StatusEffects},
+    character_controls::{StatusEffect, StatusEffects},
     light::InLight,
     sanity::{Sanity, SanityAmplifiers, SanityBlockers},
 };
