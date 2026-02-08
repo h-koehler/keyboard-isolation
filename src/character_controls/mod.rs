@@ -11,6 +11,7 @@ use crate::{
 };
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
+use bevy_kira_audio::SpatialAudioReceiver;
 use bevy_lit::prelude::*;
 
 pub mod flashlight;
@@ -46,6 +47,8 @@ impl Character {
 pub enum StatusEffect {
     Slowed,
     Blind,
+    Stalked,
+    Insane,
 }
 
 #[derive(Component)]
@@ -138,16 +141,18 @@ fn player_rotation_input(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((
-        Camera2d::default(),
-        Lighting2dSettings {
-            ..Default::default()
-        },
-        AmbientLight2d {
-            intensity: if DEBUG_BRIGHTNESS { 0.1 } else { 0.0 }, // More like darkness amiright,
-            ..Default::default()
-        },
-    ));
+    commands
+        .spawn((
+            Camera2d::default(),
+            Lighting2dSettings {
+                ..Default::default()
+            },
+            AmbientLight2d {
+                intensity: if DEBUG_BRIGHTNESS { 0.1 } else { 0.0 }, // More like darkness amiright,
+                ..Default::default()
+            },
+        ))
+        .insert(SpatialAudioReceiver);
 
     commands
         .spawn((

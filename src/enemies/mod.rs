@@ -45,8 +45,13 @@ pub struct FleeLight {
 #[derive(Component)]
 pub struct Attack {
     radius: f32,
-    inflicted_status: Option<StatusEffect>,
+    inflicts_status: Option<StatusEffect>,
     cooldown: Timer,
+}
+
+#[derive(Component)]
+pub struct Stalk {
+    radius: f32,
 }
 
 fn alien(asset_server: &AssetServer) -> impl Bundle {
@@ -62,7 +67,7 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
         },
         Attack {
             radius: 45.0,
-            inflicted_status: None,
+            inflicts_status: Some(StatusEffect::Slowed),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
         CheckInLight(45.0),
@@ -92,6 +97,7 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
             speed: 20.0,
         },
         CheckInLight(45.0),
+        Stalk { radius: 350.0 },
         FleeLight {
             action: FleeAction::Walk {
                 speed: 500.0,
@@ -126,7 +132,7 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
         },
         Attack {
             radius: 45.0,
-            inflicted_status: None,
+            inflicts_status: Some(StatusEffect::Blind),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
         CheckInLight(45.0),
@@ -265,11 +271,30 @@ fn attack_player(
         let distance = (enemy_translation - player_translation).length();
         if distance <= attack.radius && attack.cooldown.is_finished() {
             player_character.take_damage();
-            if let Some(inflicted_status) = attack.inflicted_status {
-                player_status_effects.add_effect(inflicted_status);
+            if let Some(inflicts_status) = attack.inflicts_status {
+                player_status_effects.add_effect(inflicts_status);
             }
             attack.cooldown.reset();
         }
+    }
+}
+
+fn stalk_player(
+    mut q_enemies: Query<(&mut Stalk, &Transform), Without<Character>>,
+    mut q_player: Query<(&Transform, &mut StatusEffects)>,
+) {
+    let (player_transform, mut player_status_effects) =
+        q_player.single_mut().expect("No Player Object");
+    let player_translation = player_transform.translation.truncate();
+    let is_stalked = q_enemies.iter_mut().any(|(stalk, enemy_transform)| {
+        let enemy_translation = enemy_transform.translation.truncate();
+        let distance = (enemy_translation - player_translation).length();
+        distance <= stalk.radius
+    });
+    if is_stalked {
+        player_status_effects.add_effect(StatusEffect::Stalked);
+    } else {
+        player_status_effects.remove_effect(StatusEffect::Stalked);
     }
 }
 
@@ -305,6 +330,7 @@ pub(super) fn register(app: &mut App) {
             track_player,
             flee_light,
             apply_velocity,
+            stalk_player,
             attack_player,
         )
             .chain(),
