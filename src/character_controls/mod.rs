@@ -192,8 +192,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .with_children(|p| {
             p.spawn((
                 Flashlight {
-                    battery: 60.0,
-                    max_charge: 60.0,
+                    battery: 20.0,
+                    max_charge: 20.0,
                 },
                 SpotLight2d {
                     intensity: 0.0,
