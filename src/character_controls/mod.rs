@@ -52,7 +52,6 @@ pub struct SpawnEnemies {
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
 pub enum StatusEffect {
     Slowed,
-    Blind,
     Stalked,
     Insane,
 }

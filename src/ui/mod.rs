@@ -137,7 +137,6 @@ fn update_ui(
             let status_icons = status_effects
                 .iter()
                 .map(|status_effect| match status_effect {
-                    StatusEffect::Blind => "gojo.png",
                     StatusEffect::Slowed => "cripple_icon.png",
                     StatusEffect::Stalked => "insanity_icon.png",
                     StatusEffect::Insane => "insanity_icon.png",
