@@ -148,7 +148,7 @@ fn clamp_sanity_to_max(mut q_sanity: Query<(&mut Sanity, &SanityBlockers)>) {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
 struct SanityBar(f32);
 
 fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
@@ -175,6 +175,7 @@ fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
                     height: Val::Px(128.0),
                     ..Default::default()
                 },
+                ZIndex(10),
             ))
             .with_children(|p| {
                 p.spawn((
@@ -191,10 +192,12 @@ fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
             });
 
             p.spawn((
-                SanityBar(1647.0),
+                SanityBar(600.0),
                 Node {
-                    width: Val::Px(1647.0),
-                    height: Val::Px(215.0),
+                    top: Val::Px(40.0),
+                    left: Val::Px(-32.8),
+                    width: Val::Px(335.0),
+                    height: Val::Px(87.0),
                     margin: UiRect::AUTO,
                     ..Default::default()
                 },
@@ -207,8 +210,8 @@ fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
                         ..Default::default()
                     },
                     Node {
-                        width: Val::Percent(1677.0),
-                        height: Val::Percent(437.0),
+                        top: Val::Px(-40.0),
+                        height: Val::Px(160.0),
                         // left: Val::Px(-10.0),
                         ..Default::default()
                     },
