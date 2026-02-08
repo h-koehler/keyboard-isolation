@@ -1,5 +1,5 @@
 # make wasm_run
-cargo build --release --target wasm32-unknown-unknown
+cargo build --release --features bevy/webgpu --target wasm32-unknown-unknown
 wasm-bindgen --out-dir ./webbuild/out/ --target web ./target/wasm32-unknown-unknown/release/keyboard_isolation.wasm
 cp -r assets ./webbuild/
 cp index.html ./webbuild/index.html
