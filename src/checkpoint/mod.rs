@@ -4,7 +4,7 @@ use bevy_lit::prelude::PointLight2d;
 use crate::{
     character_controls::{Character, flashlight::Flashlight},
     dialog::{Dialog, DialogOnClose},
-    sanity::body::{DeadFriend, DeadSO, dead_body},
+    sanity::body::{DeadSO, dead_body},
 };
 
 #[derive(Component)]
