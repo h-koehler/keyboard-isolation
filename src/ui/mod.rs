@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::character_controls::{Character, STARTING_HEALTH, StatusEffect, StatusEffects};
+use crate::{
+    character_controls::{Character, STARTING_HEALTH, StatusEffect, StatusEffects},
+    dialog::DialogOnClose,
+};
 
 pub const UI_HEIGHT: f32 = 200.0;
 pub const HEALTH_TEXT: &str = "HEALTH: ";
@@ -8,6 +11,9 @@ pub const STATUS_EFFECT_TEXT: &str = "EFFECTS: ";
 
 #[derive(Component)]
 pub struct HealthUI;
+
+#[derive(Component)]
+pub struct Dead;
 
 #[derive(Component)]
 pub struct StatusUI;
@@ -99,16 +105,21 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn update_ui(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    q_player: Query<&Character>,
+    q_player: Query<(Entity, &Character, Has<Dead>)>,
     q_status_effects: Query<&StatusEffects>,
     q_health_ui: Query<Entity, With<HealthUI>>,
     q_status_ui: Query<Entity, With<StatusUI>>,
 ) {
-    if let Ok(player) = q_player.single() {
+    if let Ok((player_entity, player_character, is_dead)) = q_player.single() {
+        if player_character.health == 0 && !is_dead {
+            commands
+                .entity(player_entity)
+                .insert((Dead, DialogOnClose("Oof ouchy I'm dead.".into())));
+        }
         if let Ok(health_ui) = q_health_ui.single() {
             commands.entity(health_ui).despawn_children();
             commands.entity(health_ui).with_child((
-                Text::new(player.health.to_string()),
+                Text::new(player_character.health.to_string()),
                 TextFont {
                     font: asset_server.load("fonts/default.ttf"),
                     font_size: 33.0,
@@ -148,4 +159,5 @@ fn update_ui(
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, create_ui);
+    app.add_systems(PostUpdate, update_ui);
 }
