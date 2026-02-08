@@ -4,6 +4,7 @@ use crate::{
     items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
+    win::{CurrentState, GameState},
 };
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
@@ -175,6 +176,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 falloff: 4.0,
                 ..default()
             },
+            CurrentState(GameState::Collecting),
         ))
         .with_children(|p| {
             p.spawn((
