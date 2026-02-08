@@ -18,13 +18,14 @@ pub struct TrackPlayer {
 
 #[derive(Component)]
 pub struct Teleport {
+    radius: f32,
     distance: f32,
     chance: f32,
 }
 
 pub enum FleeAction {
     Walk(f32),
-    Teleport(f32),
+    Teleport { distance: f32, chance: f32 },
 }
 
 #[derive(Component)]
@@ -62,11 +63,15 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
             speed: 20.0,
         },
         Teleport {
+            radius: 750.0,
             distance: 500.0,
             chance: 0.001,
         },
         FleeLight {
-            action: FleeAction::Teleport(50.0),
+            action: FleeAction::Teleport {
+                distance: 500.0,
+                chance: 0.01,
+            },
         },
         Sprite {
             image: asset_server.load("teleporting_alien.png"),
@@ -121,15 +126,18 @@ fn teleport(
     let player_translation = player_transform.translation.truncate();
     let mut rng = rand::rng();
     for (teleport, mut enemy_transform) in q_enemies.iter_mut() {
-        let chance: f32 = rng.random();
-        if chance < teleport.chance {
-            let enemy_translation = enemy_transform.translation.truncate();
-            let dir = (player_translation - enemy_translation).normalize_or_zero();
-            let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
-            let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
-            let distance_multiplier = rng.random_range(0.5..1.0);
-            enemy_transform.translation +=
-                (wiggled_dir * (teleport.distance * distance_multiplier)).extend(0.0);
+        let enemy_translation = enemy_transform.translation.truncate();
+        let difference = player_translation - enemy_translation;
+        if difference.length() <= teleport.radius {
+            let chance: f32 = rng.random();
+            if chance < teleport.chance {
+                let dir = (player_translation - enemy_translation).normalize_or_zero();
+                let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
+                let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+                let distance_multiplier = rng.random_range(0.5..1.0);
+                enemy_transform.translation +=
+                    (wiggled_dir * (teleport.distance * distance_multiplier)).extend(0.0);
+            }
         }
     }
 }
@@ -151,13 +159,16 @@ fn flee_light(
                 enemy_velocity.linear_velocity =
                     enemy_velocity.linear_velocity.lerp(dir * speed, 0.5);
             }
-            FleeAction::Teleport(distance) => {
+            FleeAction::Teleport { distance, chance } => {
+                println!("flee {}", enemy_translation);
                 let mut rng = rand::rng();
-                let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
-                let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
-                enemy_transform.translation =
-                    enemy_transform.translation + (wiggled_dir * distance).extend(0.0);
-                println!("{}", enemy_transform.translation);
+                let random: f32 = rng.random();
+                if random < chance {
+                    let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
+                    let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+                    enemy_transform.translation =
+                        enemy_transform.translation + (wiggled_dir * distance).extend(0.0);
+                }
             }
         }
     }
