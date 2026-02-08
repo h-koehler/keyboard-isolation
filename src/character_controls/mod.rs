@@ -9,8 +9,8 @@ use crate::{
     win::{CurrentState, GameState},
     y_sort::YSort,
 };
-use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
+use bevy::{platform::collections::HashSet, time::Stopwatch};
 use bevy_kira_audio::SpatialAudioReceiver;
 use bevy_lit::prelude::*;
 
@@ -54,10 +54,14 @@ impl Character {
     }
 }
 
+#[derive(Component)]
+pub struct SpawnEnemies {
+    pub stopwatch: Stopwatch,
+}
+
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
 pub enum StatusEffect {
     Slowed,
-    Blind,
     Stalked,
     Insane,
 }
@@ -223,6 +227,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn((
             Camera2d::default(),
             Lighting2dSettings {
+                penetration: PenetrationSettings {
+                    max: 30.0,
+                    intensity: 1.0,
+                    falloff: 1.0,
+                    sample_directions: 16,
+                    sample_steps: 8,
+                },
                 ..Default::default()
             },
             AmbientLight2d {
@@ -240,6 +251,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 health: STARTING_HEALTH,
                 is_hurt: false,
             },
+            // Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+            // LightOccluder2d {
+            //     occluder_mask: asset_server.load(PLAYER_ASS_PATH),
+            // },
             (
                 Sanity::default(),
                 CheckInLight(32.0),
@@ -266,6 +281,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             },
             CurrentState(GameState::Collecting),
+            SpawnEnemies {
+                stopwatch: Stopwatch::new(),
+            },
         ))
         .with_children(|p| {
             p.spawn((

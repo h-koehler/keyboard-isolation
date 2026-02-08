@@ -18,8 +18,8 @@ pub fn spawn_crash_site_objects(
             position: Vec2::new(300.0, 100.0),
             size: ship_size,
             sprite_path: "crashed_ship.png".to_string(),
-            collision_offset: Some(Vec2::new(0.0,0.0)),
-            collision_size: Some(ship_size)
+            collision_offset: Some(Vec2::new(0.0,-120.0)),
+            collision_size: Some(Vec2::new(1200.0,500.0))
         },
         
         // Alien foliage/plants
@@ -28,20 +28,44 @@ pub fn spawn_crash_site_objects(
             position: Vec2::new(-500.0, 500.0),
             size: green_plant_size,
             sprite_path: "alien_plant_green.png".to_string(),
-            collision_offset: Some(Vec2::new(0.0,-90.0)),
-            collision_size: Some(Vec2::new(200.0,40.0))
+            collision_offset: Some(Vec2::new(0.0,-60.0)),
+            collision_size: Some(Vec2::new(200.0,70.0))
         },
         ObjectPlacement {
             object_type: ObjectType::Foliage,
-            position: Vec2::new(-150.0, -100.0),
+            position: Vec2::new(700.0, -300.0),
             size: purple_plant_size,
             sprite_path: "alien_plant_purple.png".to_string(),
-            collision_offset: Some(Vec2::new(0.0,0.0)),
-            collision_size: Some(purple_plant_size)
+            collision_offset: Some(Vec2::new(0.0,-45.0)),
+            collision_size: Some(Vec2::new(75.0,10.0))
+        },
+           ObjectPlacement {
+            object_type: ObjectType::Foliage,
+            position: Vec2::new(900.0, -500.0),
+            size: purple_plant_size,
+            sprite_path: "alien_plant_purple.png".to_string(),
+            collision_offset: Some(Vec2::new(0.0,-45.0)),
+            collision_size: Some(Vec2::new(75.0,10.0))
+        },
+           ObjectPlacement {
+            object_type: ObjectType::Foliage,
+            position: Vec2::new(1200.0, -700.0),
+            size: purple_plant_size,
+            sprite_path: "alien_plant_purple.png".to_string(),
+            collision_offset: Some(Vec2::new(0.0,-45.0)),
+            collision_size: Some(Vec2::new(75.0,10.0))
+        },
+           ObjectPlacement {
+            object_type: ObjectType::Foliage,
+            position: Vec2::new(2400.0, -3000.0),
+            size: purple_plant_size,
+            sprite_path: "alien_plant_purple.png".to_string(),
+            collision_offset: Some(Vec2::new(0.0,-45.0)),
+            collision_size: Some(Vec2::new(75.0,10.0))
         },
         ObjectPlacement {
             object_type: ObjectType::Foliage,
-            position: Vec2::new(250.0, -120.0),
+            position: Vec2::new(650.0, -400.0),
             size: coral_size,
             sprite_path: "alien_coral.png".to_string(),
             collision_offset: Some(Vec2::new(0.0,0.0)),
