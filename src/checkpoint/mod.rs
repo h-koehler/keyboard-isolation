@@ -69,7 +69,6 @@ fn checkpoint(asset_server: &AssetServer, text: impl Into<Dialog>) -> impl Bundl
         Checkpoint,
         CheckpointBlinking::default(),
         DialogOnClose(text.into()),
-        Transform::from_translation(Vec3::new(0.0, 400.0, 0.0)),
         Sprite {
             image: asset_server.load("checkpoint.png"),
             ..Default::default()
@@ -78,9 +77,22 @@ fn checkpoint(asset_server: &AssetServer, text: impl Into<Dialog>) -> impl Bundl
 }
 
 fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(checkpoint(
-        &asset_server,
-        "A recharge station! I should be safe here. Maybe my friends are at other stations?",
+    commands.spawn((
+        Transform::from_translation(Vec3::new(0.0, 400.0, 0.0)),
+        checkpoint(
+            &asset_server,
+            "A recharge station! I should be safe here. Maybe my friends are at other stations?",
+        ),
+    ));
+
+    commands.spawn((
+        Transform::from_translation(Vec3::new(-400.0, 0.0, 0.0)),
+        checkpoint(&asset_server, "2"),
+    ));
+
+    commands.spawn((
+        Transform::from_translation(Vec3::new(400.0, 0.0, 0.0)),
+        checkpoint(&asset_server, "3"),
     ));
 }
 
