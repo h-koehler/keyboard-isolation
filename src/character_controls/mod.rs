@@ -152,10 +152,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             Character {
                 health: STARTING_HEALTH,
             },
+            CheckInLight(32.0),
             StatusEffects(HashSet::new()),
             CollectedItems(HashSet::new()),
             Movable,
-            CheckInLight(1.0),
             Velocity::default(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
