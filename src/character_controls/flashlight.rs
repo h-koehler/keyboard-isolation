@@ -14,7 +14,7 @@ pub struct Flashlight {
     pub state: FlashlightState,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Reflect)]
 pub enum FlashlightState {
     Lost,
     Collected,
