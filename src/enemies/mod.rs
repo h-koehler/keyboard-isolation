@@ -137,7 +137,7 @@ pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) 
         },
         Attack {
             radius: 45.0,
-            inflicts_status: Some(StatusEffect::Blind),
+            inflicts_status: None,
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
         FleeLight {
