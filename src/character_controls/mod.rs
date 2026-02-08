@@ -148,16 +148,6 @@ fn load_walk_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(Walk(asset_server.load("sounds/walking.ogg")));
 }
 
-// fn play_walk_sound(
-//     q_player: Query<&Velocity, (With<Character>, Without<Camera2d>)>,
-//     walk_sound: Res<Walk>,
-// ) {
-//     let char_vel = q_player.single().expect("No Player Object");
-//     if char_vel.linear_velocity.normalize_or_zero() == Vec2::ZERO {
-//         c
-//     }
-// }
-
 pub(crate) fn apply_velocity(
     time: Res<Time>,
     mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
