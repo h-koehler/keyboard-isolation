@@ -55,7 +55,7 @@ pub struct Stalk {
     radius: f32,
 }
 
-fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
+pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Alien"),
         Movable,
@@ -89,7 +89,7 @@ fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     )
 }
 
-fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
+pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Stalker"),
         Movable,
@@ -119,7 +119,7 @@ fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle
     )
 }
 
-fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
+pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Teleporting Alien"),
         Movable,

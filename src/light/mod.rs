@@ -103,19 +103,24 @@ fn despawn_enemies_spawned_in_light(
 fn finish_enemies_spawned_in_darkness(
     q_enemies: Query<Entity, (With<Enemy>, Without<Sprite>, Without<InLight>)>,
     asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
     mut commands: Commands,
 ) {
     let mut rng = rand::rng();
     for enemy in q_enemies.iter() {
         let random: f32 = rng.random();
         if random < 0.34 {
-            commands.entity(enemy).insert(alien(&asset_server));
+            commands
+                .entity(enemy)
+                .insert(alien(&asset_server, &mut meshes));
         } else if random < 0.67 {
             commands
                 .entity(enemy)
-                .insert(teleporting_alien(&asset_server));
+                .insert(teleporting_alien(&asset_server, &mut meshes));
         } else {
-            commands.entity(enemy).insert(stalker(&asset_server));
+            commands
+                .entity(enemy)
+                .insert(stalker(&asset_server, &mut meshes));
         }
     }
 }
