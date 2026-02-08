@@ -49,6 +49,7 @@ fn show_dialog_on_close(
                     padding: UiRect::all(Val::Px(10.0)),
                     border: UiRect::all(Val::Px(1.0)),
                     justify_content: JustifyContent::SpaceBetween,
+                    flex_direction: FlexDirection::Column,
                     ..Default::default()
                 },
             ))
