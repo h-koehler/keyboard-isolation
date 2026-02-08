@@ -7,6 +7,7 @@ use crate::{
     ui::UI_HEIGHT,
 };
 
+pub mod animation;
 pub mod character_controls;
 pub mod checkpoint;
 pub mod dialog;
@@ -44,6 +45,7 @@ fn main() {
     light::register(&mut app);
     dialog::register(&mut app);
     checkpoint::register(&mut app);
+    animation::register(&mut app);
 
     app.run();
 }
