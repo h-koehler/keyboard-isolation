@@ -17,6 +17,12 @@ pub struct TrackPlayer {
     speed: f32,
 }
 
+#[derive(Component)]
+pub struct StalkPlayer {
+    stalk_radius: f32,
+    speed: f32,
+}
+
 fn alien(asset_server: &AssetServer) -> impl Bundle {
     (
         Name::new("Enemy"),
@@ -30,6 +36,23 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
         },
         Sprite {
             image: asset_server.load("alien.png"),
+            custom_size: Some(Vec2::splat(45.0)),
+            ..Default::default()
+        },
+    )
+}
+
+fn stalker(asset_server: &AssetServer) -> impl Bundle {
+    (
+        Enemy,
+        Movable,
+        Velocity::default(),
+        StalkPlayer {
+            stalk_radius: 300.0,
+            speed: 20.0,
+        },
+        Sprite {
+            image: asset_server.load("stalker.png"),
             custom_size: Some(Vec2::splat(45.0)),
             ..Default::default()
         },
@@ -56,6 +79,47 @@ fn track_player(
             enemy_velocity.linear_velocity = enemy_velocity
                 .linear_velocity
                 .lerp(dir * track_player.speed, 0.5);
+
+            // If we want to change the enemy sprites based on direction.
+            // let dir_abs = dir.abs();
+            // let x_greater_than_y = dir_abs.x > dir_abs.y;
+            // sprite.image = if x_greater_than_y {
+            //     if dir.x > 0.0 {
+            //         profiles.right.clone()
+            //     } else {
+            //         profiles.left.clone()
+            //     }
+            // } else {
+            //     if dir.y > 0.0 {
+            //         profiles.up.clone()
+            //     } else {
+            //         profiles.down.clone()
+            //     }
+            // };
+        } else {
+            enemy_velocity.linear_velocity = enemy_velocity.linear_velocity.lerp(Vec2::ZERO, 0.5);
+        }
+    }
+}
+
+fn stalk_player(
+    mut q_enemies: Query<(&StalkPlayer, &mut Transform, &mut Velocity), Without<Character>>,
+    mut q_player: Query<&Transform, With<Character>>,
+    // profiles: Res<PlayerProfiles>,
+) {
+    let player_transform = q_player.single_mut().expect("No Player Object");
+    let player_translation = player_transform.translation.truncate();
+
+    for (stalk_player, enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
+        let enemy_translation = enemy_transform.translation.truncate();
+        let difference = player_translation - enemy_translation;
+
+        if difference.length() >= stalk_player.stalk_radius {
+            let dir = difference.normalize_or_zero();
+
+            enemy_velocity.linear_velocity = enemy_velocity
+                .linear_velocity
+                .lerp(dir * stalk_player.speed, 0.5);
 
             // If we want to change the enemy sprites based on direction.
             // let dir_abs = dir.abs();
@@ -113,7 +177,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     commands.spawn((
-        alien(&asset_server),
+        stalker(&asset_server),
         Transform::from_translation(Vec3::new(250.0, -50.0, 3.0)),
     ));
 }
@@ -121,5 +185,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, setup);
     app.add_systems(Update, track_player);
+    app.add_systems(Update, stalk_player);
     app.add_systems(PostUpdate, apply_velocity);
 }
