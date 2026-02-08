@@ -20,6 +20,8 @@ pub mod room;
 pub mod sanity;
 pub mod ui;
 pub mod win;
+pub mod collision;
+pub mod y_sort;
 
 fn main() {
     let mut app = App::new();
@@ -50,6 +52,7 @@ fn main() {
     checkpoint::register(&mut app);
     animation::register(&mut app);
     assets::register(&mut app);
+    collision::register(&mut app);
 
     app.run();
 }
