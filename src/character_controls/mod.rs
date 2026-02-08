@@ -17,7 +17,8 @@ use bevy_lit::prelude::*;
 pub mod flashlight;
 
 const DEBUG_BRIGHTNESS: bool = true;
-const MOVE_SPEED: f32 = 200.0;
+const BASE_MOVE_SPEED: f32 = 200.0;
+const SLOWED_MULTIPLIER: f32 = 0.7;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
 pub const STARTING_HEALTH: i8 = 3;
@@ -52,7 +53,7 @@ pub enum StatusEffect {
 }
 
 #[derive(Component)]
-pub struct StatusEffects(HashSet<StatusEffect>);
+pub struct StatusEffects(pub HashSet<StatusEffect>);
 
 impl StatusEffects {
     pub fn add_effect(&mut self, status_effect: StatusEffect) {
@@ -73,14 +74,23 @@ pub struct Velocity {
     pub linear_velocity: Vec2,
 }
 
+fn get_speed(status_effects: &StatusEffects) -> f32 {
+    if status_effects.0.contains(&StatusEffect::Slowed) {
+        BASE_MOVE_SPEED * SLOWED_MULTIPLIER
+    } else {
+        BASE_MOVE_SPEED
+    }
+}
+
 fn player_movement_input(
     mut commands: Commands,
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Velocity, &mut Walking), With<Character>>,
+    mut q_player: Query<(&mut Velocity, &StatusEffects, &mut Walking), With<Character>>,
     q_walk_audio: Query<Entity, With<WalkAudio>>,
     walk_sound: Res<Walk>,
 ) {
-    let mut char_vel = q_player.single_mut().expect("No Player Object");
+    let (mut char_vel, status_effects, mut walk_state) =
+        q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::KeyA) {
         dir.x -= 1.0;
@@ -95,8 +105,8 @@ fn player_movement_input(
         dir.y -= 1.0;
     }
 
-    if dir != Vec2::ZERO && char_vel.1.0 == WalkState::Stopped {
-        char_vel.1.0 = WalkState::Walking;
+    if dir != Vec2::ZERO && walk_state.0 == WalkState::Stopped {
+        walk_state.0 = WalkState::Walking;
         commands.spawn((
             WalkAudio,
             AudioPlayer::new(walk_sound.0.clone()),
@@ -107,16 +117,16 @@ fn player_movement_input(
             },
         ));
     } else if dir == Vec2::ZERO {
-        char_vel.1.0 = WalkState::Stopped;
+        walk_state.0 = WalkState::Stopped;
         if let Ok(walk_audio) = q_walk_audio.single() {
             commands.entity(walk_audio).despawn();
         }
     }
 
-    char_vel.0.linear_velocity = char_vel
-        .0
+    let speed = get_speed(status_effects);
+    char_vel.linear_velocity = char_vel
         .linear_velocity
-        .lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
+        .lerp(dir.normalize_or_zero() * speed, 0.5);
 }
 
 #[derive(Resource)]
@@ -161,9 +171,9 @@ pub(crate) fn apply_velocity(
 
 fn player_rotation_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
+    mut q_player: Query<(&mut Transform, &Velocity, &StatusEffects), With<Character>>,
 ) {
-    let (mut trans, velocity) = q_player.single_mut().expect("No Player Object");
+    let (mut trans, velocity, status_effects) = q_player.single_mut().expect("No Player Object");
 
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::ArrowLeft) {
@@ -180,7 +190,8 @@ fn player_rotation_input(
     }
 
     if dir.length() < f32::EPSILON
-        && velocity.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
+        && velocity.linear_velocity.length()
+            > get_speed(status_effects) * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
     {
         dir = velocity.linear_velocity;
     }

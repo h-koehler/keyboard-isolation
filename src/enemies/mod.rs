@@ -139,7 +139,7 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
         FleeLight {
             action: FleeAction::Teleport {
                 distance: 500.0,
-                chance: 0.01,
+                chance: 0.03,
             },
         },
         Sprite {
