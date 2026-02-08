@@ -86,7 +86,11 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 Name::new("Status Effects"),
                 StatusUI,
                 Node {
+                    // top: Val::Px(10.0),
+                    // right: Val::Px(100.0),
                     margin: UiRect::horizontal(Val::Px(5.0)),
+                    width: Val::Px(256.0),
+                    height: Val::Px(32.0),
                     ..Default::default()
                 },
             ))
@@ -129,30 +133,36 @@ fn update_ui(
             ));
         }
 
-        let mut status_effects_text = String::from("");
-
         if let Ok(status_effects) = q_status_effects.single() {
-            for status_effect in status_effects.iter() {
-                let status_effect_text;
-                match status_effect {
-                    StatusEffect::Blind => status_effect_text = "Blind, ",
-                    StatusEffect::Slowed => status_effect_text = "Slowed, ",
-                }
-                status_effects_text.push_str(status_effect_text);
+            let status_icons = status_effects
+                .iter()
+                .map(|status_effect| match status_effect {
+                    StatusEffect::Blind => "gojo.png",
+                    StatusEffect::Slowed => "cripple_icon.png",
+                    StatusEffect::Stalked => "insanity_icon.png",
+                    StatusEffect::Insane => "insanity_icon.png",
+                });
+            if let Ok(status_ui) = q_status_ui.single() {
+                commands.entity(status_ui).despawn_children();
+                commands.entity(status_ui).with_children(|p| {
+                    // let mut offset = 0.0;
+                    for status_icon in status_icons {
+                        p.spawn((
+                            ImageNode {
+                                image: asset_server.load(status_icon),
+                                ..Default::default()
+                            },
+                            Node {
+                                margin: UiRect::left(Val::Px(4.0)),
+                                width: Val::Px(32.0),
+                                height: Val::Px(32.0),
+                                ..Default::default()
+                            },
+                        ));
+                        // offset += 10.0;
+                    }
+                });
             }
-        }
-
-        if let Ok(status_ui) = q_status_ui.single() {
-            commands.entity(status_ui).despawn_children();
-            commands.entity(status_ui).with_child((
-                Text::new(status_effects_text),
-                TextFont {
-                    font: asset_server.load("fonts/default.ttf"),
-                    font_size: 33.0,
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-            ));
         }
     }
 }

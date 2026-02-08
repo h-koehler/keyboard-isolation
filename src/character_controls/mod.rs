@@ -12,7 +12,7 @@ use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = false;
+const DEBUG_BRIGHTNESS: bool = true;
 const MOVE_SPEED: f32 = 200.0;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
@@ -43,6 +43,8 @@ impl Character {
 pub enum StatusEffect {
     Slowed,
     Blind,
+    Stalked,
+    Insane,
 }
 
 #[derive(Component)]
