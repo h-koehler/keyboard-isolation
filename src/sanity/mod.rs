@@ -149,7 +149,7 @@ fn clamp_sanity_to_max(mut q_sanity: Query<(&mut Sanity, &SanityBlockers)>) {
 }
 
 #[derive(Component)]
-struct SanityBar;
+struct SanityBar(f32);
 
 fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
@@ -161,38 +161,75 @@ fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
                 height: Val::Px(50.0),
                 ..Default::default()
             },
-            ImageNode {
-                image: asset_server.load("sanity_bar.png"),
-                ..Default::default()
-            },
             Name::new("Sanity Bar"),
         ))
         .with_children(|p| {
             p.spawn((
-                SanityBar,
+                ImageNode {
+                    image: asset_server.load("sanity_circle.png"),
+                    color: css::PURPLE.into(),
+                    ..Default::default()
+                },
                 Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
+                    width: Val::Px(128.0),
+                    height: Val::Px(128.0),
+                    ..Default::default()
+                },
+            ))
+            .with_children(|p| {
+                p.spawn((
+                    ImageNode {
+                        image: asset_server.load("sanity_brain.png"),
+                        ..Default::default()
+                    },
+                    Node {
+                        width: Val::Px(128.0),
+                        height: Val::Px(128.0),
+                        ..Default::default()
+                    },
+                ));
+            });
+
+            p.spawn((
+                SanityBar(1647.0),
+                Node {
+                    width: Val::Px(1647.0),
+                    height: Val::Px(215.0),
+                    margin: UiRect::AUTO,
                     ..Default::default()
                 },
                 BackgroundColor(css::MEDIUM_PURPLE.into()),
-            ));
+            ))
+            .with_children(|p| {
+                p.spawn((
+                    ImageNode {
+                        image: asset_server.load("sanity_bar.png"),
+                        ..Default::default()
+                    },
+                    Node {
+                        width: Val::Percent(1677.0),
+                        height: Val::Percent(437.0),
+                        // left: Val::Px(-10.0),
+                        ..Default::default()
+                    },
+                ));
+            });
         });
 }
 
 fn update_sanity_bar(
     q_sanity: Query<&Sanity>,
-    mut q_sanity_bar: Query<(&mut BackgroundColor, &mut Node), With<SanityBar>>,
+    mut q_sanity_bar: Query<(&mut BackgroundColor, &mut Node, &SanityBar)>,
 ) {
     let Ok(sanity) = q_sanity.single() else {
         return;
     };
 
-    let Ok((mut bg, mut node)) = q_sanity_bar.single_mut() else {
+    let Ok((mut bg, mut node, sanity_bar)) = q_sanity_bar.single_mut() else {
         return;
     };
 
-    node.width = Val::Percent(sanity.0);
+    node.width = Val::Px(sanity.0 / 100.0 * sanity_bar.0);
 
     bg.0 = if sanity.0 >= 75.0 {
         css::WHITE
