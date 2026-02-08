@@ -1,5 +1,6 @@
 use crate::{
     character_controls::flashlight::Flashlight,
+    dialog::DialogOnClose,
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
 };
@@ -167,6 +168,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             Name::new("Character"),
+            DialogOnClose("It's amazing I survived the crash...".into()),
             Character {
                 health: STARTING_HEALTH,
             },
