@@ -11,6 +11,7 @@ pub mod animation;
 pub mod assets;
 pub mod character_controls;
 pub mod checkpoint;
+pub mod collision;
 pub mod dialog;
 pub mod dog;
 pub mod enemies;
@@ -20,6 +21,7 @@ pub mod room;
 pub mod sanity;
 pub mod ui;
 pub mod win;
+pub mod y_sort;
 
 fn main() {
     let mut app = App::new();
@@ -41,7 +43,7 @@ fn main() {
     room::register(&mut app);
     ui::register(&mut app);
     enemies::register(&mut app);
-    dog::register(&mut app);
+    // dog::register(&mut app);
     items::register(&mut app);
     win::register(&mut app);
     sanity::register(&mut app);
@@ -50,6 +52,7 @@ fn main() {
     checkpoint::register(&mut app);
     animation::register(&mut app);
     assets::register(&mut app);
+    collision::register(&mut app);
 
     app.run();
 }

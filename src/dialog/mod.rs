@@ -120,7 +120,6 @@ fn show_dialog_on_close(
                 ));
             });
     }
-    // trans.translation
 }
 
 fn close_dialog_on_enter(
@@ -128,15 +127,12 @@ fn close_dialog_on_enter(
     q_dialog: Query<Entity, With<DialogNode>>,
     inputs: Res<ButtonInput<KeyCode>>,
 ) {
-    let Ok(dialog_node) = q_dialog.single() else {
-        return;
-    };
-
     if !(inputs.just_pressed(KeyCode::Enter) || inputs.just_pressed(KeyCode::NumpadEnter)) {
         return;
     }
-
-    commands.entity(dialog_node).despawn();
+    for dialog_node in q_dialog.iter() {
+        commands.entity(dialog_node).despawn();
+    }
 }
 
 pub(super) fn register(app: &mut App) {

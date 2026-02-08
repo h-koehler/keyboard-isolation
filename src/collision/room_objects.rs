@@ -1,0 +1,76 @@
+use bevy::prelude::*;
+use crate::collision::{ObjectPlacement, ObjectType, spawn_objects_from_data};
+
+/// Example function to spawn collision objects in the crash site room
+pub fn spawn_crash_site_objects(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+) {
+    let ship_size = Vec2::new(1200.0, 800.0);
+    let green_plant_size = Vec2::new(200.0,200.0);
+    let purple_plant_size = Vec2::new(100.0, 100.0);
+    let coral_size = Vec2::new(100.0, 100.0);
+
+    let placements = vec![
+        // Main crashed spaceship (large collision)
+        ObjectPlacement {
+            object_type: ObjectType::CrashedShip,
+            position: Vec2::new(300.0, 100.0),
+            size: ship_size,
+            sprite_path: "crashed_ship.png".to_string(),
+            collision_offset: Some(Vec2::new(0.0,0.0)),
+            collision_size: Some(ship_size)
+        },
+        
+        // Alien foliage/plants
+        ObjectPlacement {
+            object_type: ObjectType::Foliage,
+            position: Vec2::new(-500.0, 500.0),
+            size: green_plant_size,
+            sprite_path: "alien_plant_green.png".to_string(),
+            collision_offset: Some(Vec2::new(0.0,-90.0)),
+            collision_size: Some(Vec2::new(200.0,40.0))
+        },
+        ObjectPlacement {
+            object_type: ObjectType::Foliage,
+            position: Vec2::new(-150.0, -100.0),
+            size: purple_plant_size,
+            sprite_path: "alien_plant_purple.png".to_string(),
+            collision_offset: Some(Vec2::new(0.0,0.0)),
+            collision_size: Some(purple_plant_size)
+        },
+        ObjectPlacement {
+            object_type: ObjectType::Foliage,
+            position: Vec2::new(250.0, -120.0),
+            size: coral_size,
+            sprite_path: "alien_coral.png".to_string(),
+            collision_offset: Some(Vec2::new(0.0,0.0)),
+            collision_size: Some(coral_size)
+        },
+    ];
+    
+    spawn_objects_from_data(commands, asset_server, &placements);
+}
+
+/// Manual spawning example - gives you full control
+pub fn spawn_custom_objects(
+    commands: &mut Commands,
+    asset_server: &Res<AssetServer>,
+) {
+    use crate::collision::WorldObjectBundle;
+    
+    // Manually spawn individual objects
+    commands.spawn(WorldObjectBundle::new(
+        ObjectType::CrashedShip,
+        Vec3::new(200.0, 150.0, 1.0),
+        Vec2::new(100.0, 70.0),
+        asset_server.load("crashed_ship.png"),
+    ));
+    
+    commands.spawn(WorldObjectBundle::new(
+        ObjectType::Rock,
+        Vec3::new(-200.0, -100.0, 1.0),
+        Vec2::new(60.0, 60.0),
+        asset_server.load("rock.png"),
+    ));
+}
