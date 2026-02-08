@@ -1,6 +1,8 @@
 use bevy::{color::palettes::css, prelude::*};
 use bevy_lit::prelude::SpotLight2d;
 
+use crate::items::{CollectedItems, Item};
+
 #[derive(Component)]
 pub struct FlashlightActive;
 
@@ -9,6 +11,13 @@ pub struct Flashlight {
     /// Seconds of battery life remaining
     pub battery: f32,
     pub max_charge: f32,
+    pub state: FlashlightState,
+}
+
+#[derive(PartialEq, Eq, Reflect)]
+pub enum FlashlightState {
+    Lost,
+    Collected,
 }
 
 pub fn update_flashlight(
@@ -20,14 +29,17 @@ pub fn update_flashlight(
     let enabled = inputs.pressed(KeyCode::Space);
 
     for (ent, mut flashlight, mut spotlight) in q_flashlight.iter_mut() {
-        if enabled && flashlight.battery > 0.0 {
-            flashlight.battery -= time.delta_secs();
-            flashlight.battery = flashlight.battery.max(0.0);
-            spotlight.intensity = (flashlight.battery / (flashlight.max_charge * 0.05)).min(1.0);
-            commands.entity(ent).insert(FlashlightActive);
-        } else {
-            spotlight.intensity = 0.0;
-            commands.entity(ent).remove::<FlashlightActive>();
+        if flashlight.state == FlashlightState::Collected {
+            if enabled && flashlight.battery > 0.0 {
+                flashlight.battery -= time.delta_secs();
+                flashlight.battery = flashlight.battery.max(0.0);
+                spotlight.intensity =
+                    (flashlight.battery / (flashlight.max_charge * 0.05)).min(1.0);
+                commands.entity(ent).insert(FlashlightActive);
+            } else {
+                spotlight.intensity = 0.0;
+                commands.entity(ent).remove::<FlashlightActive>();
+            }
         }
     }
 }
@@ -35,58 +47,72 @@ pub fn update_flashlight(
 #[derive(Component)]
 struct BatteryAmount(f32);
 
-fn add_flashlight(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands
-        .spawn((
-            Node {
-                top: Val::Px(100.0),
-                right: Val::Px(100.0),
-                margin: UiRect::left(Val::Auto),
-                width: Val::Px(64.0),
-                height: Val::Px(64.0),
-                ..Default::default()
-            },
-            Name::new("Battery UI"),
-        ))
-        .with_children(|p| {
-            p.spawn((
-                ImageNode {
-                    image: asset_server.load("battery.png"),
-                    ..Default::default()
-                },
-                Node {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    ..Default::default()
-                },
-            ))
-            .with_children(|p| {
-                p.spawn((
-                    Node {
-                        width: Val::Percent(64.0),
-                        height: Val::Percent(85.0),
-                        margin: UiRect::AUTO,
-                        ..Default::default()
-                    },
-                    BatteryAmount(85.0),
-                    BackgroundColor(css::LIGHT_YELLOW.into()),
-                ));
+pub fn add_flashlight(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut q_flashlight: Query<&mut Flashlight>,
+    q_collected_items: Query<&CollectedItems>,
+) {
+    if let Ok(collected_items) = q_collected_items.single() {
+        if collected_items.0.get(&Item::Flashlight) == Some(&Item::Flashlight) {
+            if let Ok(mut flashlight) = q_flashlight.single_mut() {
+                if flashlight.state == FlashlightState::Lost {
+                    flashlight.state = FlashlightState::Collected;
+                    commands
+                        .spawn((
+                            Node {
+                                top: Val::Px(100.0),
+                                right: Val::Px(100.0),
+                                margin: UiRect::left(Val::Auto),
+                                width: Val::Px(64.0),
+                                height: Val::Px(64.0),
+                                ..Default::default()
+                            },
+                            Name::new("Battery UI"),
+                        ))
+                        .with_children(|p| {
+                            p.spawn((
+                                ImageNode {
+                                    image: asset_server.load("battery.png"),
+                                    ..Default::default()
+                                },
+                                Node {
+                                    width: Val::Percent(100.0),
+                                    height: Val::Percent(100.0),
+                                    ..Default::default()
+                                },
+                            ))
+                            .with_children(|p| {
+                                p.spawn((
+                                    Node {
+                                        width: Val::Percent(64.0),
+                                        height: Val::Percent(85.0),
+                                        margin: UiRect::AUTO,
+                                        ..Default::default()
+                                    },
+                                    BatteryAmount(85.0),
+                                    BackgroundColor(css::LIGHT_YELLOW.into()),
+                                ));
 
-                p.spawn((
-                    Node {
-                        position_type: PositionType::Absolute,
-                        margin: UiRect::AUTO,
-                        width: Val::Px(64.0),
-                        height: Val::Px(64.0),
-                        ..Default::default()
-                    },
-                    ImageNode {
-                        image: asset_server.load("battery_electric.png"),
-                        ..Default::default()
-                    },
-                ));
-            });
-        });
+                                p.spawn((
+                                    Node {
+                                        position_type: PositionType::Absolute,
+                                        margin: UiRect::AUTO,
+                                        width: Val::Px(64.0),
+                                        height: Val::Px(64.0),
+                                        ..Default::default()
+                                    },
+                                    ImageNode {
+                                        image: asset_server.load("battery_electric.png"),
+                                        ..Default::default()
+                                    },
+                                ));
+                            });
+                        });
+                }
+            }
+        }
+    }
 }
 
 fn update_flashlight_battery(
@@ -106,6 +132,8 @@ fn update_flashlight_battery(
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, add_flashlight);
-    app.add_systems(Update, (update_flashlight, update_flashlight_battery));
+    app.add_systems(
+        Update,
+        (add_flashlight, update_flashlight, update_flashlight_battery),
+    );
 }

@@ -24,6 +24,10 @@ impl CollectedItems {
         self.0.insert(item);
     }
 
+    pub fn get_item(&mut self, item: Item) {
+        self.0.get(&item);
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = Item> {
         self.0.iter().copied()
     }
