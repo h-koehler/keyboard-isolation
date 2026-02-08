@@ -1,20 +1,37 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-#[require(Sprite, AnimationTracker)]
+#[require(Sprite, AnimationState)]
 pub struct AnimateSprite {
     pub n_frames: u32,
     pub fps: u32,
 }
 
 #[derive(Reflect, Debug, Component, Default)]
-struct AnimationTracker {
+pub struct AnimationState {
     frame: u32,
     time: f32,
+    frozen: bool,
 }
 
-impl AnimationTracker {
+impl AnimationState {
+    pub fn pause(&mut self) {
+        self.frozen = true;
+    }
+
+    pub fn resume(&mut self) {
+        self.frozen = false;
+    }
+
+    pub fn set_frame(&mut self, frame: u32) {
+        self.frame = frame;
+    }
+
     fn tick(&mut self, delta: f32, config: &AnimateSprite) {
+        if self.frozen {
+            return;
+        };
+
         self.time += delta;
 
         let time_per_frame = 1.0 / config.fps as f32;
@@ -26,14 +43,11 @@ impl AnimationTracker {
     }
 }
 
-// This system loops through all the sprites in the `TextureAtlas`, from  `first_sprite_index` to
-// `last_sprite_index` (both defined in `AnimateSprite`).
 fn execute_animations(
     time: Res<Time>,
-    mut query: Query<(&AnimateSprite, &mut AnimationTracker, &mut Sprite)>,
+    mut query: Query<(&AnimateSprite, &mut AnimationState, &mut Sprite)>,
 ) {
     for (config, mut state, mut sprite) in &mut query {
-        // We track how long the current sprite has been displayed for
         state.tick(time.delta_secs(), config);
 
         let Some(atlas) = &mut sprite.texture_atlas else {
