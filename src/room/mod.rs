@@ -51,7 +51,7 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset
             ..Default::default()
         },
         Transform::from_translation(Vec3::new(0.0, UI_HEIGHT / 2.0, -10.0))
-            .with_scale(Vec3::splat(4.0)),
+            .with_scale(Vec3::splat(2.0)),
     ));
 
     commands.spawn((Transform::from_xyz(0.0, 100.0, 0.0), fire(&fire_asset)));
