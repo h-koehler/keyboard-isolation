@@ -46,6 +46,10 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
             min_radius: 5.0,
             speed: 100.0,
         },
+        CheckInLight(45.0),
+        FleeLight {
+            action: FleeAction::Walk(300.0),
+        },
         Sprite {
             image: asset_server.load("alien.png"),
             custom_size: Some(Vec2::splat(45.0)),
