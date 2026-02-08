@@ -118,34 +118,56 @@ fn update_ui(
             ));
         }
 
-        let mut status_effects_text = String::from("");
-
         if let Ok(status_effects) = q_status_effects.single() {
-            for status_effect in status_effects.iter() {
-                let status_effect_text;
-                match status_effect {
-                    StatusEffect::Blind => status_effect_text = "Blind, ",
-                    StatusEffect::Slowed => status_effect_text = "Slowed, ",
-                }
-                status_effects_text.push_str(status_effect_text);
+            if let Ok(status_ui) = q_status_ui.single() {
+                commands.entity(status_ui).despawn_children();
+                commands.entity(status_ui).with_children(|p| {
+                    for status_effect in status_effects.iter() {
+                        match status_effect {
+                            StatusEffect::Slowed => {
+                                p.spawn((
+                                    Node {
+                                        margin: UiRect::axes(Val::Px(5.0), Val::Auto),
+                                        width: Val::Px(128.0),
+                                        height: Val::Px(128.0),
+                                        ..Default::default()
+                                    },
+                                    ImageNode::new(asset_server.load(format!("cripple_icon.png"))),
+                                ));
+                            }
+                            StatusEffect::Blind => {
+                                p.spawn((
+                                    Node {
+                                        margin: UiRect::axes(Val::Px(5.0), Val::Auto),
+                                        width: Val::Px(128.0),
+                                        height: Val::Px(128.0),
+                                        ..Default::default()
+                                    },
+                                    ImageNode::new(asset_server.load(format!("insanity_icon.png"))),
+                                ));
+                            }
+                            StatusEffect::Bloodied => {
+                                p.spawn((
+                                    Node {
+                                        margin: UiRect::axes(Val::Px(5.0), Val::Auto),
+                                        width: Val::Px(128.0),
+                                        height: Val::Px(128.0),
+                                        ..Default::default()
+                                    },
+                                    ImageNode::new(
+                                        asset_server.load(format!("hemorrhage_icon.png")),
+                                    ),
+                                ));
+                            }
+                        }
+                    }
+                });
             }
-        }
-
-        if let Ok(status_ui) = q_status_ui.single() {
-            commands.entity(status_ui).despawn_children();
-            commands.entity(status_ui).with_child((
-                Text::new(status_effects_text),
-                TextFont {
-                    font: asset_server.load("fonts/default.ttf"),
-                    font_size: 33.0,
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-            ));
         }
     }
 }
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, create_ui);
+    app.add_systems(Update, update_ui);
 }

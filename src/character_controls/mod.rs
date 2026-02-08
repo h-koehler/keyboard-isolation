@@ -27,6 +27,7 @@ pub struct Character {
 pub enum StatusEffect {
     Slowed,
     Blind,
+    Bloodied,
 }
 
 #[derive(Component)]
