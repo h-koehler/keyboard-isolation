@@ -9,7 +9,7 @@ pub mod player_sanity;
 
 #[derive(Component, Debug, PartialEq, PartialOrd, Reflect)]
 #[require(SanityBlockers, SanityAmplifiers)]
-pub struct Sanity(f32);
+pub struct Sanity(pub f32);
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Reflect)]
 pub struct SanityBlocker {

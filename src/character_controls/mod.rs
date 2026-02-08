@@ -9,8 +9,8 @@ use crate::{
     win::{CurrentState, GameState},
     y_sort::YSort,
 };
-use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
+use bevy::{platform::collections::HashSet, time::Stopwatch};
 use bevy_kira_audio::SpatialAudioReceiver;
 use bevy_lit::prelude::*;
 
@@ -42,6 +42,11 @@ impl Character {
             self.health += 1;
         }
     }
+}
+
+#[derive(Component)]
+pub struct SpawnEnemies {
+    pub stopwatch: Stopwatch,
 }
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
@@ -208,6 +213,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ..default()
             },
             CurrentState(GameState::Collecting),
+            SpawnEnemies {
+                stopwatch: Stopwatch::new(),
+            },
         ))
         .with_children(|p| {
             p.spawn((

@@ -1,6 +1,6 @@
 use crate::{
     character_controls::{Character, StatusEffect, StatusEffects},
-    light::{CheckInLight, InLight},
+    light::InLight,
     room::Movable,
 };
 use bevy::prelude::*;
@@ -55,10 +55,9 @@ pub struct Stalk {
     radius: f32,
 }
 
-fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
+pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Alien"),
-        Enemy,
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -71,7 +70,6 @@ fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
             inflicts_status: Some(StatusEffect::Slowed),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
-        CheckInLight(45.0),
         FleeLight {
             action: FleeAction::Walk {
                 speed: 300.0,
@@ -91,9 +89,9 @@ fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     )
 }
 
-fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
+pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
-        Enemy,
+        Name::new("Stalker"),
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -101,7 +99,6 @@ fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle
             min_radius: 300.0,
             speed: 20.0,
         },
-        CheckInLight(45.0),
         Stalk { radius: 350.0 },
         FleeLight {
             action: FleeAction::Walk {
@@ -122,10 +119,9 @@ fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle
     )
 }
 
-fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
+pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Teleporting Alien"),
-        Enemy,
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -144,7 +140,6 @@ fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> i
             inflicts_status: Some(StatusEffect::Blind),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
-        CheckInLight(45.0),
         FleeLight {
             action: FleeAction::Teleport {
                 distance: 500.0,
@@ -319,23 +314,7 @@ fn apply_velocity(time: Res<Time>, mut q_enemies: Query<(&mut Transform, &Veloci
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: ResMut<Assets<Mesh>>) {
-    commands.spawn((
-        alien(&asset_server, &mut meshes),
-        Transform::from_translation(Vec3::new(-600.0, 350.0, 3.0)),
-    ));
-    commands.spawn((
-        stalker(&asset_server, &mut meshes),
-        Transform::from_translation(Vec3::new(500.0, -50.0, 3.0)),
-    ));
-    commands.spawn((
-        teleporting_alien(&asset_server, &mut meshes),
-        Transform::from_translation(Vec3::new(50.0, -400.0, 3.0)),
-    ));
-}
-
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
     app.add_systems(
         Update,
         (
