@@ -10,6 +10,9 @@ use crate::{
 #[derive(Component)]
 pub struct Movable;
 
+#[derive(Component)]
+struct FireOffset(f32);
+
 pub const ROOM_HEIGHT: u32 = 700;
 pub const ROOM_WIDTH: u32 = 1100;
 
@@ -25,6 +28,7 @@ fn fire(fire_asset: &FireAsset) -> impl Bundle {
             color: Srgba::hex("ffccaa").unwrap().into(),
             ..Default::default()
         },
+        FireOffset(rand::random::<f32>() * 20.0),
         Name::new("Fire"),
         Sprite {
             image: fire_asset.image.clone(),
@@ -50,6 +54,9 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset
     ));
 
     commands.spawn((Transform::from_xyz(0.0, 100.0, 0.0), fire(&fire_asset)));
+    commands.spawn((Transform::from_xyz(100.0, 100.0, 0.0), fire(&fire_asset)));
+    commands.spawn((Transform::from_xyz(200.0, 400.0, 0.0), fire(&fire_asset)));
+    commands.spawn((Transform::from_xyz(100.0, -100.0, 0.0), fire(&fire_asset)));
 }
 
 #[derive(Resource)]
@@ -58,8 +65,15 @@ pub struct FireAsset {
     layout: Handle<TextureAtlasLayout>,
 }
 
+fn flicker_fire(time: Res<Time>, mut q_fire: Query<(&FireOffset, &mut PointLight2d)>) {
+    for (offset, mut light) in q_fire.iter_mut() {
+        light.intensity = 0.25 + 0.25 * (offset.0 + time.elapsed_secs()).sin().abs();
+    }
+}
+
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup_room.after(LoadAssetsSet));
+    app.add_systems(Startup, setup_room.after(LoadAssetsSet))
+        .add_systems(Update, flicker_fire);
 
     load_atlas::<7, 32>(app, "fire.png", |world, (texture, layout)| {
         world.insert_resource(FireAsset {
