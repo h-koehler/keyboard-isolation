@@ -12,9 +12,12 @@ pub struct InLight;
 pub struct IgnoreInLightCheckLight;
 
 fn check_in_light(
-    q_check: Query<(Entity, &Transform, &CheckInLight), Without<IgnoreInLightCheckLight>>,
+    q_check: Query<(Entity, &Transform, &CheckInLight)>,
     q_light: Query<(Entity, &GlobalTransform, &PointLight2d), Without<IgnoreInLightCheckLight>>,
-    q_spotlight: Query<(&GlobalTransform, &SpotLight2d)>,
+    q_spotlight: Query<
+        (&GlobalTransform, &SpotLight2d, Option<&ChildOf>),
+        Without<IgnoreInLightCheckLight>,
+    >,
     mut commands: Commands,
 ) {
     for (ent, check_trans, check) in q_check.iter() {
@@ -25,9 +28,13 @@ fn check_in_light(
             light.intensity != 0.0
                 && (trans.translation() - check_trans.translation).length()
                     < (light.outer_radius + check.0)
-        }) || q_spotlight.iter().any(|(g_trans, light)| {
+        }) || q_spotlight.iter().any(|(g_trans, light, child_of)| {
             if light.intensity == 0.0 {
                 return false;
+            }
+
+            if child_of.is_some_and(|x| x.parent() == ent) {
+                return true;
             }
 
             let moved_trans = g_trans.translation() - check_trans.translation;

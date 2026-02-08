@@ -51,6 +51,16 @@ pub struct SanityBoost {
 #[derive(Clone, Component, Debug, PartialEq, PartialOrd, Reflect)]
 pub struct SanityAmplifiers(Vec<SanityAmplifier>);
 
+impl SanityAmplifiers {
+    pub fn add_amplifier(&mut self, amplifier: SanityAmplifier) {
+        self.0.push(amplifier);
+    }
+
+    pub fn multiplier(&self) -> f32 {
+        self.0.iter().map(|x| x.amount).sum::<f32>()
+    }
+}
+
 impl Default for Sanity {
     fn default() -> Self {
         Self(100.0)
@@ -60,6 +70,22 @@ impl Default for Sanity {
 impl Sanity {
     pub fn new(amt: f32) -> Self {
         Self(amt.clamp(0.0, 100.0))
+    }
+
+    pub fn remove_sanity(&mut self, amount_to_remove: Sanity, amplifiers: &SanityAmplifiers) {
+        *self = Self::new(self.0 - amount_to_remove.0 * amplifiers.multiplier());
+    }
+
+    pub fn increase_sanity(
+        &mut self,
+        amount_to_increase: Sanity,
+        amplifiers: &SanityAmplifiers,
+        blockers: &SanityBlockers,
+    ) {
+        *self = Self::new(
+            (self.0 + amount_to_increase.0 * amplifiers.multiplier())
+                .min(blockers.maximum_sanity().0),
+        );
     }
 }
 
