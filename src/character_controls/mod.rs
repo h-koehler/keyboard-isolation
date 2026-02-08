@@ -5,7 +5,8 @@ use crate::{
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
     win::{CurrentState, GameState},
-    collision::Collider
+    collision::Collider,
+    y_sort::YSort,
 };
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
@@ -160,6 +161,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             Movable,
             Velocity::default(),
             Collider::square(45.0),
+            YSort::default_layer(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
                 custom_size: Some(Vec2::splat(45.0)),
