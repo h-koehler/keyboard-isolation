@@ -1,5 +1,5 @@
 use crate::{
-    character_controls::flashlight::Flashlight,
+    character_controls::flashlight::{Flashlight, FlashlightState},
     items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
@@ -10,7 +10,7 @@ use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = false;
+const DEBUG_BRIGHTNESS: bool = true;
 const MOVE_SPEED: f32 = 200.0;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
@@ -179,6 +179,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 Flashlight {
                     battery: 20.0,
                     max_charge: 20.0,
+                    state: FlashlightState::Lost,
                 },
                 SpotLight2d {
                     intensity: 0.0,
