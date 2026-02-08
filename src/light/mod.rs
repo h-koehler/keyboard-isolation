@@ -31,6 +31,11 @@ fn check_in_light(
             }
 
             let moved_trans = g_trans.translation() - check_trans.translation;
+
+            if moved_trans.length() > 1000.0 {
+                return false;
+            }
+
             let dotted = moved_trans.normalize_or_zero().dot(g_trans.left().into());
 
             dotted > (1.0 - light.outer_angle / 90.0)
