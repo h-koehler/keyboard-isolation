@@ -17,6 +17,53 @@ pub struct DialogOnClose(pub Dialog);
 #[derive(Component)]
 pub struct DialogNode;
 
+pub fn show_dialog_on_condition(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    text: &str,
+) {
+    commands
+        .spawn((
+            DialogNode,
+            BorderColor::all(css::GOLD),
+            BackgroundColor(Color::BLACK),
+            Node {
+                margin: UiRect {
+                    top: Val::Px(300.0),
+                    left: Val::Auto,
+                    right: Val::Auto,
+                    bottom: Val::Auto,
+                },
+                width: Val::Px(400.0),
+                min_height: Val::Px(300.0),
+                padding: UiRect::all(Val::Px(10.0)),
+                border: UiRect::all(Val::Px(1.0)),
+                justify_content: JustifyContent::SpaceBetween,
+                flex_direction: FlexDirection::Column,
+                ..Default::default()
+            },
+        ))
+        .with_children(|p| {
+            p.spawn((
+                Text::new(text),
+                TextFont {
+                    font: asset_server.load("fonts/default.ttf"),
+                    font_size: 42.0,
+                    ..Default::default()
+                },
+            ));
+
+            p.spawn((
+                Text::new("<enter to close>"),
+                TextFont {
+                    font: asset_server.load("fonts/default.ttf"),
+                    font_size: 18.0,
+                    ..Default::default()
+                },
+            ));
+        });
+}
+
 fn show_dialog_on_close(
     mut commands: Commands,
     q_player: Query<&Transform, With<Character>>,
