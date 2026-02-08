@@ -4,6 +4,7 @@ use bevy_lit::prelude::PointLight2d;
 use crate::{
     character_controls::{Character, flashlight::Flashlight},
     dialog::{Dialog, DialogOnClose},
+    sanity::body::{DeadFriend, DeadSO, dead_body},
 };
 
 #[derive(Component)]
@@ -93,6 +94,11 @@ fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Transform::from_translation(Vec3::new(400.0, 0.0, 0.0)),
         checkpoint(&asset_server, "3"),
+    ));
+
+    commands.spawn((
+        Transform::from_translation(Vec3::new(450.0, 200.0, 0.0)),
+        dead_body::<DeadSO>(asset_server, "dead_person_red.png"),
     ));
 }
 
