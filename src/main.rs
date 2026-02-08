@@ -1,5 +1,6 @@
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_kira_audio::prelude::*;
 use bevy_lit::prelude::Lighting2dPlugin;
 
 use crate::{
@@ -36,6 +37,8 @@ fn main() {
             ..Default::default()
         }),
         Lighting2dPlugin,
+        AudioPlugin,
+        SpatialAudioPlugin,
     ))
     .add_plugins(EguiPlugin::default())
     .add_plugins(WorldInspectorPlugin::default());
