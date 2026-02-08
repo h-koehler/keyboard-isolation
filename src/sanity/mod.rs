@@ -4,8 +4,10 @@ use bevy::{color::palettes::css, prelude::*};
 
 use crate::character_controls::Character;
 
+pub mod player_sanity;
+
 #[derive(Component, Debug, PartialEq, PartialOrd, Reflect)]
-#[require(SanityBlockers)]
+#[require(SanityBlockers, SanityAmplifiers)]
 pub struct Sanity(f32);
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Reflect)]
@@ -48,7 +50,7 @@ pub struct SanityBoost {
     pub duration: Duration,
 }
 
-#[derive(Clone, Component, Debug, PartialEq, PartialOrd, Reflect)]
+#[derive(Clone, Component, Debug, PartialEq, PartialOrd, Reflect, Default)]
 pub struct SanityAmplifiers(Vec<SanityAmplifier>);
 
 impl SanityAmplifiers {
@@ -57,7 +59,7 @@ impl SanityAmplifiers {
     }
 
     pub fn multiplier(&self) -> f32 {
-        self.0.iter().map(|x| x.amount).sum::<f32>()
+        1.0 + self.0.iter().map(|x| x.amount).sum::<f32>()
     }
 }
 
@@ -72,18 +74,18 @@ impl Sanity {
         Self(amt.clamp(0.0, 100.0))
     }
 
-    pub fn remove_sanity(&mut self, amount_to_remove: Sanity, amplifiers: &SanityAmplifiers) {
-        *self = Self::new(self.0 - amount_to_remove.0 * amplifiers.multiplier());
+    pub fn remove_sanity(&mut self, amount_to_remove: f32, amplifiers: &SanityAmplifiers) {
+        *self = Self::new(self.0 - amount_to_remove * amplifiers.multiplier());
     }
 
     pub fn increase_sanity(
         &mut self,
-        amount_to_increase: Sanity,
+        amount_to_increase: f32,
         amplifiers: &SanityAmplifiers,
         blockers: &SanityBlockers,
     ) {
         *self = Self::new(
-            (self.0 + amount_to_increase.0 * amplifiers.multiplier())
+            (self.0 + amount_to_increase * amplifiers.multiplier())
                 .min(blockers.maximum_sanity().0),
         );
     }
@@ -201,6 +203,8 @@ fn tick_sanity(mut q_sanity: Query<&mut SanityBlockers>, time: Res<Time>) {
 }
 
 pub(super) fn register(app: &mut App) {
+    player_sanity::register(app);
+
     app.add_systems(
         Update,
         (
