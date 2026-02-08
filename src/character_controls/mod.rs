@@ -81,23 +81,6 @@ fn apply_velocity(
     for (mut trans, vel) in q_player.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
-
-        // let half_width = ROOM_WIDTH as f32 / 2.0;
-        // let half_height = ROOM_HEIGHT as f32 / 2.0;
-        //
-        // let (half_player_width, half_player_height) = if let Some(size) = PLAYER_SIZE {
-        //     (size.x * 0.5, size.y * 0.5)
-        // } else {
-        //     (50.0, 50.0)
-        // };
-
-        // let min_x = -half_width + half_player_width + ROOM_INSET;
-        // let max_x = half_width - half_player_width - ROOM_INSET;
-        // let min_y = UI_HEIGHT / 2.0 + -half_height + half_player_height + ROOM_INSET;
-        // let max_y = UI_HEIGHT / 2.0 + half_height - half_player_height - ROOM_INSET;
-        //
-        // trans.translation.x = trans.translation.x.clamp(min_x, max_x);
-        // trans.translation.y = trans.translation.y.clamp(min_y, max_y);
     }
 }
 
