@@ -170,6 +170,7 @@ fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
                     color: css::PURPLE.into(),
                     ..Default::default()
                 },
+                SanityColorCircle,
                 Node {
                     width: Val::Px(128.0),
                     height: Val::Px(128.0),
@@ -191,38 +192,49 @@ fn add_sanity_bar(mut commands: Commands, asset_server: Res<AssetServer>) {
                 ));
             });
 
-            p.spawn((
-                SanityBar(600.0),
-                Node {
-                    top: Val::Px(40.0),
-                    left: Val::Px(-32.8),
-                    width: Val::Px(335.0),
-                    height: Val::Px(87.0),
-                    margin: UiRect::AUTO,
-                    ..Default::default()
-                },
-                BackgroundColor(css::MEDIUM_PURPLE.into()),
-            ))
-            .with_children(|p| {
-                p.spawn((
-                    ImageNode {
-                        image: asset_server.load("sanity_bar.png"),
-                        ..Default::default()
-                    },
-                    Node {
-                        top: Val::Px(-40.0),
-                        height: Val::Px(160.0),
-                        // left: Val::Px(-10.0),
-                        ..Default::default()
-                    },
-                ));
-            });
+            p.spawn((Node {
+                top: Val::Px(40.0),
+                left: Val::Px(-32.8),
+                width: Val::Px(600.0),
+                height: Val::Px(87.0),
+                margin: UiRect::AUTO,
+                ..Default::default()
+            },))
+                .with_children(|p| {
+                    p.spawn((
+                        Node {
+                            position_type: PositionType::Absolute,
+                            width: Val::Px(600.0),
+                            height: Val::Px(87.0),
+                            ..Default::default()
+                        },
+                        SanityBar(600.0),
+                        BackgroundColor(css::MEDIUM_PURPLE.into()),
+                    ));
+                    p.spawn((
+                        ZIndex(1),
+                        ImageNode {
+                            image: asset_server.load("sanity_bar.png"),
+                            ..Default::default()
+                        },
+                        Node {
+                            top: Val::Px(-40.0),
+                            height: Val::Px(160.0),
+                            // left: Val::Px(-10.0),
+                            ..Default::default()
+                        },
+                    ));
+                });
         });
 }
+
+#[derive(Component)]
+struct SanityColorCircle;
 
 fn update_sanity_bar(
     q_sanity: Query<&Sanity>,
     mut q_sanity_bar: Query<(&mut BackgroundColor, &mut Node, &SanityBar)>,
+    mut q_color: Query<&mut ImageNode, With<SanityColorCircle>>,
 ) {
     let Ok(sanity) = q_sanity.single() else {
         return;
@@ -234,7 +246,7 @@ fn update_sanity_bar(
 
     node.width = Val::Px(sanity.0 / 100.0 * sanity_bar.0);
 
-    bg.0 = if sanity.0 >= 75.0 {
+    let color = if sanity.0 >= 75.0 {
         css::WHITE
     } else if sanity.0 >= 25.0 {
         css::PURPLE
@@ -242,6 +254,11 @@ fn update_sanity_bar(
         css::RED
     }
     .into();
+
+    bg.0 = color;
+    if let Ok(mut n) = q_color.single_mut() {
+        n.color = color;
+    }
 }
 
 fn tick_sanity(mut q_sanity: Query<&mut SanityBlockers>, time: Res<Time>) {
