@@ -4,6 +4,7 @@ use crate::{
     room::Movable,
 };
 use bevy::prelude::*;
+use bevy_lit::prelude::LightOccluder2d;
 use rand::Rng;
 use std::f32::consts::FRAC_PI_2;
 
@@ -54,7 +55,7 @@ pub struct Stalk {
     radius: f32,
 }
 
-fn alien(asset_server: &AssetServer) -> impl Bundle {
+fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Alien"),
         Enemy,
@@ -78,6 +79,10 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
                 change_direction_chance: 0.01,
             },
         },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("alien.png"),
+        },
         Sprite {
             image: asset_server.load("alien.png"),
             custom_size: Some(Vec2::splat(45.0)),
@@ -86,7 +91,7 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-fn stalker(asset_server: &AssetServer) -> impl Bundle {
+fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Enemy,
         Movable,
@@ -105,6 +110,10 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
                 change_direction_chance: 0.05,
             },
         },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("stalker.png"),
+        },
         Sprite {
             image: asset_server.load("stalker.png"),
             custom_size: Some(Vec2::splat(45.0)),
@@ -113,7 +122,7 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
+fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Teleporting Alien"),
         Enemy,
@@ -141,6 +150,10 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
                 distance: 500.0,
                 chance: 0.01,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("teleporting_alien.png"),
         },
         Sprite {
             image: asset_server.load("teleporting_alien.png"),
@@ -306,17 +319,17 @@ fn apply_velocity(time: Res<Time>, mut q_enemies: Query<(&mut Transform, &Veloci
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: ResMut<Assets<Mesh>>) {
     commands.spawn((
-        alien(&asset_server),
+        alien(&asset_server, &mut meshes),
         Transform::from_translation(Vec3::new(-600.0, 350.0, 3.0)),
     ));
     commands.spawn((
-        stalker(&asset_server),
+        stalker(&asset_server, &mut meshes),
         Transform::from_translation(Vec3::new(500.0, -50.0, 3.0)),
     ));
     commands.spawn((
-        teleporting_alien(&asset_server),
+        teleporting_alien(&asset_server, &mut meshes),
         Transform::from_translation(Vec3::new(50.0, -400.0, 3.0)),
     ));
 }
