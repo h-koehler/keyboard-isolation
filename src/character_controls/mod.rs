@@ -74,8 +74,11 @@ pub struct Velocity {
 }
 
 fn player_movement_input(
+    mut commands: Commands,
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<&mut Velocity, With<Character>>,
+    mut q_player: Query<(&mut Velocity, &mut Walking), With<Character>>,
+    q_walk_audio: Query<Entity, With<WalkAudio>>,
+    walk_sound: Res<Walk>,
 ) {
     let mut char_vel = q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
@@ -91,10 +94,59 @@ fn player_movement_input(
     if inputs.pressed(KeyCode::KeyS) {
         dir.y -= 1.0;
     }
-    char_vel.linear_velocity = char_vel
+
+    if dir != Vec2::ZERO && char_vel.1.0 == WalkState::Stopped {
+        char_vel.1.0 = WalkState::Walking;
+        commands.spawn((
+            WalkAudio,
+            AudioPlayer::new(walk_sound.0.clone()),
+            PlaybackSettings {
+                volume: bevy::audio::Volume::Linear(0.1),
+                mode: bevy::audio::PlaybackMode::Loop,
+                ..Default::default()
+            },
+        ));
+    } else if dir == Vec2::ZERO {
+        char_vel.1.0 = WalkState::Stopped;
+        if let Ok(walk_audio) = q_walk_audio.single() {
+            commands.entity(walk_audio).despawn();
+        }
+    }
+
+    char_vel.0.linear_velocity = char_vel
+        .0
         .linear_velocity
         .lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
 }
+
+#[derive(Resource)]
+pub struct Walk(Handle<AudioSource>);
+
+#[derive(Component)]
+pub struct WalkAudio;
+
+#[derive(PartialEq, Eq)]
+pub enum WalkState {
+    Walking,
+    Stopped,
+}
+
+#[derive(Component)]
+pub struct Walking(WalkState);
+
+fn load_walk_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Walk(asset_server.load("sounds/walking.ogg")));
+}
+
+// fn play_walk_sound(
+//     q_player: Query<&Velocity, (With<Character>, Without<Camera2d>)>,
+//     walk_sound: Res<Walk>,
+// ) {
+//     let char_vel = q_player.single().expect("No Player Object");
+//     if char_vel.linear_velocity.normalize_or_zero() == Vec2::ZERO {
+//         c
+//     }
+// }
 
 pub(crate) fn apply_velocity(
     time: Res<Time>,
@@ -168,6 +220,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 CollectedItems(HashSet::new()),
                 Movable,
                 Velocity::default(),
+                Walking(WalkState::Stopped),
                 Collider::square(45.0),
                 YSort::default_layer(),
             ),
@@ -223,10 +276,16 @@ fn camera_follow_player(
 pub(super) fn register(app: &mut App) {
     flashlight::register(app);
 
-    app.add_systems(Startup, (setup /*load_profiles*/,));
+    app.add_systems(Startup, (setup /*load_profiles*/, load_walk_sound));
     app.add_systems(Update, player_movement_input);
     app.add_systems(
         PostUpdate,
-        (apply_velocity, player_rotation_input, camera_follow_player).chain(),
+        (
+            apply_velocity,
+            player_rotation_input,
+            camera_follow_player,
+            // play_walk_sound,
+        )
+            .chain(),
     );
 }
