@@ -18,7 +18,7 @@ fn decrease_sanity_in_dark(
         if in_light {
             sanity.increase_sanity(1.0 * time.delta_secs(), amplifiers, blockers);
         } else {
-            sanity.remove_sanity(1.0 * time.delta_secs(), amplifiers);
+            sanity.decrease_sanity(1.0 * time.delta_secs(), amplifiers);
         }
     }
 }

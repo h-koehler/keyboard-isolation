@@ -7,6 +7,7 @@ use crate::{
     ui::UI_HEIGHT,
 };
 
+pub mod animation;
 pub mod character_controls;
 pub mod checkpoint;
 pub mod dialog;
@@ -17,6 +18,7 @@ pub mod light;
 pub mod room;
 pub mod sanity;
 pub mod ui;
+pub mod win;
 
 fn main() {
     let mut app = App::new();
@@ -40,10 +42,12 @@ fn main() {
     enemies::register(&mut app);
     dog::register(&mut app);
     items::register(&mut app);
+    win::register(&mut app);
     sanity::register(&mut app);
     light::register(&mut app);
     dialog::register(&mut app);
     checkpoint::register(&mut app);
+    animation::register(&mut app);
 
     app.run();
 }
