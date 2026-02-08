@@ -26,8 +26,15 @@ pub struct Teleport {
 }
 
 pub enum FleeAction {
-    Walk(f32),
-    Teleport { distance: f32, chance: f32 },
+    Walk {
+        speed: f32,
+        maybe_direction: Option<Vec2>,
+        change_direction_chance: f32,
+    },
+    Teleport {
+        distance: f32,
+        chance: f32,
+    },
 }
 
 #[derive(Component)]
@@ -60,7 +67,11 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
         },
         CheckInLight(45.0),
         FleeLight {
-            action: FleeAction::Walk(300.0),
+            action: FleeAction::Walk {
+                speed: 300.0,
+                maybe_direction: None,
+                change_direction_chance: 0.01,
+            },
         },
         Sprite {
             image: asset_server.load("alien.png"),
@@ -82,7 +93,11 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
         },
         CheckInLight(45.0),
         FleeLight {
-            action: FleeAction::Walk(500.0),
+            action: FleeAction::Walk {
+                speed: 500.0,
+                maybe_direction: None,
+                change_direction_chance: 0.05,
+            },
         },
         Sprite {
             image: asset_server.load("stalker.png"),
@@ -194,29 +209,42 @@ fn teleport(
 
 fn flee_light(
     mut q_enemies: Query<
-        (&FleeLight, &mut Transform, &mut Velocity),
+        (&mut FleeLight, &mut Transform, &mut Velocity),
         (With<InLight>, Without<Character>),
     >,
     mut q_player: Query<&Transform, With<Character>>,
 ) {
     let player_transform = q_player.single_mut().expect("No Player Object");
     let player_translation = player_transform.translation.truncate();
-    for (flee_light, mut enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
+    for (mut flee_light, mut enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
         let enemy_translation = enemy_transform.translation.truncate();
         let dir = (enemy_translation - player_translation).normalize_or_zero();
-        match flee_light.action {
-            FleeAction::Walk(speed) => {
+        let mut rng = rand::rng();
+        let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
+        let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+        let random: f32 = rng.random();
+        match &mut flee_light.action {
+            FleeAction::Walk {
+                speed,
+                maybe_direction,
+                change_direction_chance,
+            } => {
+                if random < *change_direction_chance {
+                    *maybe_direction = Some(wiggled_dir);
+                }
+                let dir = if let Some(direction) = maybe_direction {
+                    *direction
+                } else {
+                    *maybe_direction = Some(wiggled_dir);
+                    wiggled_dir
+                };
                 enemy_velocity.linear_velocity =
-                    enemy_velocity.linear_velocity.lerp(dir * speed, 0.5);
+                    enemy_velocity.linear_velocity.lerp(*speed * dir, 0.5);
             }
             FleeAction::Teleport { distance, chance } => {
-                let mut rng = rand::rng();
-                let random: f32 = rng.random();
-                if random < chance {
-                    let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
-                    let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+                if random < *chance {
                     enemy_transform.translation =
-                        enemy_transform.translation + (wiggled_dir * distance).extend(0.0);
+                        enemy_transform.translation + (*distance * wiggled_dir).extend(0.0);
                 }
             }
         }
