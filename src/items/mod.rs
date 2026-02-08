@@ -96,7 +96,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             "Flashlight",
             "flashlight.png",
         ),
-        Transform::from_translation(Vec3::new(200.0, 100.0, 3.0)),
+        Transform::from_translation(Vec3::new(200.0, -350.0, 3.0)),
     ));
 }
 
