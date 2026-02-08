@@ -1,12 +1,19 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
+use bevy_kira_audio::{
+    Audio, AudioControl, AudioEasing, AudioTween, SpatialAudioEmitter, SpatialRadius,
+};
 
 use crate::{
     character_controls::Character,
+    checkpoint::TimeTilNextPlay,
     dialog::show_dialog_on_condition,
     items::{CollectedItems, Item},
 };
 
-pub const INTERACT_DIST: f32 = 50.0;
+pub const INTERACT_DIST: f32 = 400.0;
+pub const SHIP_DURATION: f32 = 5.0;
 
 #[derive(Component)]
 pub struct RescuePoint;
@@ -21,16 +28,52 @@ pub enum GameState {
     Finished,
 }
 
-fn rescue_point(asset_server: &AssetServer) -> impl Bundle {
+#[derive(Component)]
+pub struct SignalSent(pub SignalStatus);
+
+#[derive(PartialEq, Eq)]
+pub enum SignalStatus {
+    NotSent,
+    Sent,
+}
+
+fn rescue_point() -> impl Bundle {
     (
         Name::new("Rescue Point"),
         RescuePoint,
-        Sprite {
-            image: asset_server.load("rescue_point.png"),
-            custom_size: Some(Vec2::splat(45.0)),
-            ..Default::default()
-        },
+        SignalSent(SignalStatus::NotSent),
+        SpatialAudioEmitter { instances: vec![] },
+        SpatialRadius { radius: 5000.0 },
+        TimeTilNextPlay(Timer::from_seconds(SHIP_DURATION, TimerMode::Repeating)),
     )
+}
+
+fn play_audio(
+    time: Res<Time>,
+    asset_server: Res<AssetServer>,
+    q_game_state: Query<&CurrentState>,
+    mut q_checkpoint: Query<(&mut TimeTilNextPlay, &mut SpatialAudioEmitter), With<RescuePoint>>,
+    audio: Res<Audio>,
+) {
+    if let Ok(game_state) = q_game_state.single() {
+        if game_state.0 == GameState::Collected {
+            let delta = time.delta_secs();
+            for (mut timer, mut spatial_audio) in q_checkpoint.iter_mut() {
+                timer.0.tick(Duration::from_secs_f32(delta));
+                if timer.0.just_finished() {
+                    let ship_audio = audio
+                        .play(asset_server.load("sounds/morse_SOS.ogg"))
+                        .with_volume(-10.)
+                        .fade_in(AudioTween::new(
+                            Duration::from_millis(50),
+                            AudioEasing::OutPowi(2),
+                        ))
+                        .handle();
+                    spatial_audio.instances.push(ship_audio);
+                }
+            }
+        }
+    }
 }
 
 fn parts_collected(
@@ -57,7 +100,7 @@ fn parts_collected(
             show_dialog_on_condition(
                 commands,
                 asset_server,
-                "I think I have all of the parts now! Now where should I put them together?",
+                "I think I have all of the parts now! I need to go back to the ship!",
             );
         }
     }
@@ -89,14 +132,43 @@ fn win(
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+#[derive(Resource)]
+pub struct SignalSend(Handle<AudioSource>);
+
+fn load_win_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(SignalSend(asset_server.load("sounds/scifi alarm.ogg")));
+}
+
+fn play_win_sound(
+    mut commands: Commands,
+    mut q_signal_sent: Query<&mut SignalSent>,
+    q_game_state: Query<&CurrentState>,
+    win_sound: Res<SignalSend>,
+) {
+    if let Ok(mut signal_sent) = q_signal_sent.single_mut()
+        && let Ok(game_state) = q_game_state.single()
+    {
+        if signal_sent.0 == SignalStatus::NotSent && game_state.0 == GameState::Finished {
+            signal_sent.0 = SignalStatus::Sent;
+            commands.spawn((
+                AudioPlayer::new(win_sound.0.clone()),
+                PlaybackSettings {
+                    volume: bevy::audio::Volume::Linear(0.7),
+                    ..Default::default()
+                },
+            ));
+        }
+    }
+}
+
+fn setup(mut commands: Commands) {
     commands.spawn((
-        rescue_point(&asset_server),
-        Transform::from_translation(Vec3::new(2000.0, 0.0, 3.0)),
+        rescue_point(),
+        Transform::from_translation(Vec3::new(0.0, 0.0, 3.0)),
     ));
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
-    app.add_systems(Update, (parts_collected, win));
+    app.add_systems(Startup, (setup, load_win_sound));
+    app.add_systems(Update, (play_audio, play_win_sound, parts_collected, win));
 }

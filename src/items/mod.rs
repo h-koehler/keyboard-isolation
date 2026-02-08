@@ -71,22 +71,22 @@ fn pickup_item(
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         item(&asset_server, Item::Antenna, "Antenna", "antenna.png"),
-        Transform::from_translation(Vec3::new(-100.0, 100.0, 3.0)),
+        Transform::from_translation(Vec3::new(-200.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Plate, "Plate", "plate.png"),
-        Transform::from_translation(Vec3::new(340.0, -450.0, 3.0)),
+        Transform::from_translation(Vec3::new(-100.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Chip, "Chip", "chip.png"),
-        Transform::from_translation(Vec3::new(1325.0, 505.0, 3.0)),
+        Transform::from_translation(Vec3::new(0.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Flower, "Flower", "flower.png"),
-        Transform::from_translation(Vec3::new(-650.0, -890.0, 3.0)),
+        Transform::from_translation(Vec3::new(100.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
@@ -96,7 +96,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             "Flashlight",
             "flashlight.png",
         ),
-        Transform::from_translation(Vec3::new(200.0, -350.0, 3.0)),
+        Transform::from_translation(Vec3::new(200.0, -500.0, 3.0)),
     ));
 }
 
