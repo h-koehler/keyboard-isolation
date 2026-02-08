@@ -53,7 +53,7 @@ pub enum StatusEffect {
 }
 
 #[derive(Component)]
-pub struct StatusEffects(HashSet<StatusEffect>);
+pub struct StatusEffects(pub HashSet<StatusEffect>);
 
 impl StatusEffects {
     pub fn add_effect(&mut self, status_effect: StatusEffect) {

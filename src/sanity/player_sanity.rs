@@ -12,14 +12,20 @@ fn decrease_sanity_in_dark(
         Has<InLight>,
         &SanityAmplifiers,
         &SanityBlockers,
+        &StatusEffects,
     )>,
     time: Res<Time>,
 ) {
-    for (mut sanity, in_light, amplifiers, blockers) in q_sanity.iter_mut() {
+    for (mut sanity, in_light, amplifiers, blockers, status_effects) in q_sanity.iter_mut() {
         if in_light {
-            sanity.increase_sanity(1.0 * time.delta_secs(), amplifiers, blockers);
+            sanity.increase_sanity(
+                1.0 * time.delta_secs(),
+                amplifiers,
+                blockers,
+                status_effects,
+            );
         } else {
-            sanity.decrease_sanity(1.0 * time.delta_secs(), amplifiers);
+            sanity.decrease_sanity(1.0 * time.delta_secs(), amplifiers, status_effects);
         }
     }
 }

@@ -128,7 +128,7 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
             max_radius: 750.0,
             min_radius: 50.0,
             distance: 500.0,
-            chance: 0.001,
+            chance: 0.003,
         },
         Attack {
             radius: 45.0,
