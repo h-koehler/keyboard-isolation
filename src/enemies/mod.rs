@@ -42,8 +42,8 @@ pub struct Velocity {
 }
 
 fn track_player(
-    mut q_enemies: Query<(&TrackPlayer, &mut Transform, &mut Velocity), Without<Character>>,
-    mut q_player: Query<&Transform, With<Character>>,
+    mut q_enemies: Query<(&TrackPlayer, &mut Transform, &mut Velocity), With<Enemy>>,
+    mut q_player: Query<&Transform, (With<Character>, Without<Enemy>)>,
     // profiles: Res<PlayerProfiles>,
 ) {
     let player_transform = q_player.single_mut().expect("No Player Object");

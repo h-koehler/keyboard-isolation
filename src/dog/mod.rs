@@ -2,14 +2,34 @@ use bevy::prelude::*;
 
 use crate::{
     character_controls::{Character, Velocity},
+    enemies::Enemy,
     room::Movable,
 };
 
-#[derive(Component)]
-pub struct Dog;
+#[derive(Clone, Copy)]
+pub enum DogState {
+    Lost,
+    Collected,
+}
 
 #[derive(Component)]
-pub struct TrackPlayer {
+pub struct Dog(DogState);
+
+#[derive(Resource)]
+struct Bark(Handle<AudioSource>);
+
+impl Dog {
+    pub fn collect_dog(&mut self) {
+        self.0 = DogState::Collected;
+    }
+}
+
+fn load_bark_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Bark(asset_server.load("sounds/alien dog.ogg")));
+}
+
+#[derive(Component)]
+pub struct FollowPlayer {
     outer_radius: f32,
     inner_radius: f32,
     speed: f32,
@@ -18,10 +38,10 @@ pub struct TrackPlayer {
 fn dog(asset_server: &AssetServer) -> impl Bundle {
     (
         Name::new("Dog"),
-        Dog,
+        Dog(DogState::Lost),
         Movable,
         Velocity::default(),
-        TrackPlayer {
+        FollowPlayer {
             outer_radius: 100.0,
             inner_radius: 50.0,
             speed: 200.0,
@@ -35,23 +55,38 @@ fn dog(asset_server: &AssetServer) -> impl Bundle {
 }
 
 fn track_player(
-    mut q_enemies: Query<(&TrackPlayer, &mut Transform, &mut Velocity), Without<Character>>,
-    mut q_player: Query<&Transform, With<Character>>,
-    // profiles: Res<PlayerProfiles>,
+    mut commands: Commands,
+    mut q_dog: Query<(&FollowPlayer, &mut Transform, &mut Velocity, &mut Dog)>,
+    mut q_player: Query<&Transform, (With<Character>, Without<Enemy>, Without<Dog>)>,
+    bark: Res<Bark>, // profiles: Res<PlayerProfiles>,
 ) {
     let player_transform = q_player.single_mut().expect("No Player Object");
     let player_translation = player_transform.translation.truncate();
 
-    for (track_player, enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
-        let enemy_translation = enemy_transform.translation.truncate();
-        let difference = player_translation - enemy_translation;
+    for (track_player, dog_transform, mut dog_velocity, mut dog) in q_dog.iter_mut() {
+        let dog_translation = dog_transform.translation.truncate();
+        let difference = player_translation - dog_translation;
 
         if difference.length() <= track_player.outer_radius
             && difference.length() >= track_player.inner_radius
         {
+            match dog.0 {
+                DogState::Lost => {
+                    dog.collect_dog();
+                    commands.spawn((
+                        AudioPlayer::new(bark.0.clone()),
+                        PlaybackSettings {
+                            volume: bevy::audio::Volume::Linear(0.5),
+                            ..Default::default()
+                        },
+                    ));
+                }
+                DogState::Collected => {}
+            }
+
             let dir = difference.normalize_or_zero();
 
-            enemy_velocity.linear_velocity = enemy_velocity
+            dog_velocity.linear_velocity = dog_velocity
                 .linear_velocity
                 .lerp(dir * track_player.speed, 0.5);
 
@@ -72,7 +107,7 @@ fn track_player(
             //     }
             // };
         } else {
-            enemy_velocity.linear_velocity = enemy_velocity.linear_velocity.lerp(Vec2::ZERO, 0.5);
+            dog_velocity.linear_velocity = dog_velocity.linear_velocity.lerp(Vec2::ZERO, 0.5);
         }
     }
 }
@@ -93,7 +128,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
+    app.add_systems(Startup, (setup, load_bark_sound));
     app.add_systems(Update, track_player);
     app.add_systems(PostUpdate, apply_velocity);
 }
