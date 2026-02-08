@@ -4,12 +4,19 @@ use bevy_lit::prelude::PointLight2d;
 use crate::{
     animation::AnimateSprite,
     assets::{LoadAssetsSet, load_atlas},
+    collision::room_objects::spawn_crash_site_objects,
     ui::UI_HEIGHT,
-    collision::room_objects::spawn_crash_site_objects
 };
 
 #[derive(Component)]
 pub struct Movable;
+
+#[derive(Resource)]
+pub struct Ambiance(Handle<bevy::audio::AudioSource>);
+
+fn load_ambiance(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Ambiance(asset_server.load("sounds/ambient_noise.ogg")));
+}
 
 #[derive(Component)]
 struct FireOffset(f32);
@@ -42,7 +49,12 @@ fn fire(fire_asset: &FireAsset) -> impl Bundle {
     )
 }
 
-fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset: Res<FireAsset>) {
+fn setup_room(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    fire_asset: Res<FireAsset>,
+    ambiance: Res<Ambiance>,
+) {
     commands.spawn((
         Name::new("Background"),
         Sprite {
@@ -59,6 +71,14 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset
     commands.spawn((Transform::from_xyz(200.0, 400.0, 0.0), fire(&fire_asset)));
     commands.spawn((Transform::from_xyz(100.0, -100.0, 0.0), fire(&fire_asset)));
     spawn_crash_site_objects(&mut commands, &asset_server);
+    commands.spawn((
+        AudioPlayer::new(ambiance.0.clone()),
+        PlaybackSettings {
+            volume: bevy::audio::Volume::Linear(0.05),
+            mode: bevy::audio::PlaybackMode::Loop,
+            ..Default::default()
+        },
+    ));
 }
 
 #[derive(Resource)]
@@ -74,8 +94,11 @@ fn flicker_fire(time: Res<Time>, mut q_fire: Query<(&FireOffset, &mut PointLight
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup_room.after(LoadAssetsSet))
-        .add_systems(Update, flicker_fire);
+    app.add_systems(
+        Startup,
+        (load_ambiance, setup_room.after(LoadAssetsSet)).chain(),
+    )
+    .add_systems(Update, flicker_fire);
 
     load_atlas::<7, 32>(app, "fire.png", |world, (texture, layout)| {
         world.insert_resource(FireAsset {
