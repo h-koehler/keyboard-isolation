@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_lit::prelude::PointLight2d;
 
-use crate::dialog::DialogOnClose;
+use crate::{character_controls::Character, dialog::DialogOnClose};
 
 #[derive(Component)]
 #[require(Transform)]
@@ -47,6 +47,13 @@ fn blink_checkpoint(
     }
 }
 
+fn done_checkpoint(mut q_done: Query<&mut PointLight2d, Added<CheckpointDone>>) {
+    for mut light in q_done.iter_mut() {
+        light.intensity = 1.0;
+        light.outer_radius = 320.0;
+    }
+}
+
 fn spawn_checkpoint(mut commands: Commands) {
     commands.spawn((
         Checkpoint,
@@ -56,7 +63,35 @@ fn spawn_checkpoint(mut commands: Commands) {
     ));
 }
 
+fn done_checkpoint_on_close(
+    mut commands: Commands,
+    q_player: Query<&Transform, With<Character>>,
+    q_close: Query<(&Transform, Entity), With<CheckpointBlinking>>,
+) {
+    let Ok(trans) = q_player.single() else {
+        return;
+    };
+
+    if let Some((_, ent)) = q_close
+        .iter()
+        .find(|(t, _)| t.translation.distance(trans.translation) < 100.0)
+    {
+        commands
+            .entity(ent)
+            .remove::<CheckpointBlinking>()
+            .insert(CheckpointDone);
+    }
+}
+
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, spawn_checkpoint);
-    app.add_systems(Update, (on_add_checkpoint, blink_checkpoint));
+    app.add_systems(
+        Update,
+        (
+            on_add_checkpoint,
+            blink_checkpoint,
+            done_checkpoint_on_close,
+            done_checkpoint,
+        ),
+    );
 }

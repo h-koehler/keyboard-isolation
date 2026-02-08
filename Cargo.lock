@@ -3156,6 +3156,7 @@ dependencies = [
  "bevy",
  "bevy-inspector-egui",
  "bevy_lit",
+ "rand",
 ]
 
 [[package]]

@@ -10,7 +10,7 @@ use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = true;
+const DEBUG_BRIGHTNESS: bool = false;
 const MOVE_SPEED: f32 = 200.0;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
@@ -82,23 +82,6 @@ fn apply_velocity(
     for (mut trans, vel) in q_player.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
-
-        // let half_width = ROOM_WIDTH as f32 / 2.0;
-        // let half_height = ROOM_HEIGHT as f32 / 2.0;
-        //
-        // let (half_player_width, half_player_height) = if let Some(size) = PLAYER_SIZE {
-        //     (size.x * 0.5, size.y * 0.5)
-        // } else {
-        //     (50.0, 50.0)
-        // };
-
-        // let min_x = -half_width + half_player_width + ROOM_INSET;
-        // let max_x = half_width - half_player_width - ROOM_INSET;
-        // let min_y = UI_HEIGHT / 2.0 + -half_height + half_player_height + ROOM_INSET;
-        // let max_y = UI_HEIGHT / 2.0 + half_height - half_player_height - ROOM_INSET;
-        //
-        // trans.translation.x = trans.translation.x.clamp(min_x, max_x);
-        // trans.translation.y = trans.translation.y.clamp(min_y, max_y);
     }
 }
 
@@ -174,7 +157,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             StatusEffects(HashSet::new()),
             CollectedItems(HashSet::new()),
             Movable,
-            CheckInLight(45.0),
+            CheckInLight(1.0),
             Velocity::default(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
@@ -194,8 +177,8 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .with_children(|p| {
             p.spawn((
                 Flashlight {
-                    battery: 60.0,
-                    max_charge: 60.0,
+                    battery: 20.0,
+                    max_charge: 20.0,
                 },
                 SpotLight2d {
                     intensity: 0.0,
