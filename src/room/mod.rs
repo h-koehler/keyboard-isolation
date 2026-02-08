@@ -5,6 +5,7 @@ use crate::{
     animation::AnimateSprite,
     assets::{LoadAssetsSet, load_atlas},
     ui::UI_HEIGHT,
+    collision::room_objects::spawn_crash_site_objects
 };
 
 #[derive(Component)]
@@ -57,6 +58,7 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset
     commands.spawn((Transform::from_xyz(100.0, 100.0, 0.0), fire(&fire_asset)));
     commands.spawn((Transform::from_xyz(200.0, 400.0, 0.0), fire(&fire_asset)));
     commands.spawn((Transform::from_xyz(100.0, -100.0, 0.0), fire(&fire_asset)));
+    spawn_crash_site_objects(&mut commands, &asset_server);
 }
 
 #[derive(Resource)]
