@@ -28,6 +28,14 @@ pub const STARTING_HEALTH: i8 = 3;
 #[derive(Component)]
 pub struct Character {
     pub health: i8,
+    pub is_hurt: bool,
+}
+
+#[derive(Resource)]
+pub struct Hurt(Handle<AudioSource>);
+
+fn load_hurt_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Hurt(asset_server.load("sounds/punch.ogg")));
 }
 
 impl Character {
@@ -35,6 +43,8 @@ impl Character {
         if self.health > 0 {
             self.health -= 1;
         }
+
+        self.is_hurt = true;
     }
 
     pub fn heal(&mut self) {
@@ -66,6 +76,21 @@ impl StatusEffects {
 
     pub fn iter(&self) -> impl Iterator<Item = StatusEffect> {
         self.0.iter().copied()
+    }
+}
+
+fn play_hurt_sound(mut commands: Commands, mut q_player: Query<&mut Character>, hurt: Res<Hurt>) {
+    if let Ok(mut player) = q_player.single_mut() {
+        if player.is_hurt == true {
+            player.is_hurt = false;
+            commands.spawn((
+                AudioPlayer::new(hurt.0.clone()),
+                PlaybackSettings {
+                    volume: bevy::audio::Volume::Linear(0.7),
+                    ..Default::default()
+                },
+            ));
+        }
     }
 }
 
@@ -213,6 +238,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             DialogOnClose("It's amazing I survived the crash...".into()),
             Character {
                 health: STARTING_HEALTH,
+                is_hurt: false,
             },
             (
                 Sanity::default(),
@@ -277,7 +303,14 @@ fn camera_follow_player(
 pub(super) fn register(app: &mut App) {
     flashlight::register(app);
 
-    app.add_systems(Startup, (setup /*load_profiles*/, load_walk_sound));
+    app.add_systems(
+        Startup,
+        (
+            setup, /*load_profiles*/
+            load_walk_sound,
+            load_hurt_sound,
+        ),
+    );
     app.add_systems(Update, player_movement_input);
     app.add_systems(
         PostUpdate,
@@ -285,7 +318,7 @@ pub(super) fn register(app: &mut App) {
             apply_velocity,
             player_rotation_input,
             camera_follow_player,
-            // play_walk_sound,
+            play_hurt_sound,
         )
             .chain(),
     );
