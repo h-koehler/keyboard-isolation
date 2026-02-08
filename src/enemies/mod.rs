@@ -12,13 +12,15 @@ pub struct Enemy;
 
 #[derive(Component)]
 pub struct TrackPlayer {
-    radius: f32,
+    max_radius: f32,
+    min_radius: f32,
     speed: f32,
 }
 
 #[derive(Component)]
 pub struct Teleport {
-    radius: f32,
+    max_radius: f32,
+    min_radius: f32,
     distance: f32,
     chance: f32,
 }
@@ -40,7 +42,8 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
         Movable,
         Velocity::default(),
         TrackPlayer {
-            radius: 300.0,
+            max_radius: 300.0,
+            min_radius: 5.0,
             speed: 100.0,
         },
         Sprite {
@@ -51,22 +54,46 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
+fn stalker(asset_server: &AssetServer) -> impl Bundle {
     (
-        Name::new("Teleporting Alien"),
-        CheckInLight(45.0),
         Enemy,
         Movable,
         Velocity::default(),
         TrackPlayer {
-            radius: 500.0,
+            max_radius: f32::INFINITY,
+            min_radius: 300.0,
+            speed: 20.0,
+        },
+        CheckInLight(45.0),
+        FleeLight {
+            action: FleeAction::Walk(500.0),
+        },
+        Sprite {
+            image: asset_server.load("stalker.png"),
+            custom_size: Some(Vec2::splat(45.0)),
+            ..Default::default()
+        },
+    )
+}
+
+fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
+    (
+        Name::new("Teleporting Alien"),
+        Enemy,
+        Movable,
+        Velocity::default(),
+        TrackPlayer {
+            max_radius: 500.0,
+            min_radius: 10.0,
             speed: 20.0,
         },
         Teleport {
-            radius: 750.0,
+            max_radius: 750.0,
+            min_radius: 50.0,
             distance: 500.0,
             chance: 0.001,
         },
+        CheckInLight(45.0),
         FleeLight {
             action: FleeAction::Teleport {
                 distance: 500.0,
@@ -101,7 +128,8 @@ fn track_player(
     for (track_player, enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
         let enemy_translation = enemy_transform.translation.truncate();
         let difference = player_translation - enemy_translation;
-        if difference.length() <= track_player.radius {
+        let distance = difference.length();
+        if track_player.min_radius <= distance && distance <= track_player.max_radius {
             let dir = difference.normalize_or_zero();
             enemy_velocity.linear_velocity = enemy_velocity
                 .linear_velocity
@@ -128,7 +156,8 @@ fn teleport(
     for (teleport, mut enemy_transform) in q_enemies.iter_mut() {
         let enemy_translation = enemy_transform.translation.truncate();
         let difference = player_translation - enemy_translation;
-        if difference.length() <= teleport.radius {
+        let distance = difference.length();
+        if teleport.min_radius <= distance && distance <= teleport.max_radius {
             let chance: f32 = rng.random();
             if chance < teleport.chance {
                 let dir = (player_translation - enemy_translation).normalize_or_zero();
@@ -160,7 +189,6 @@ fn flee_light(
                     enemy_velocity.linear_velocity.lerp(dir * speed, 0.5);
             }
             FleeAction::Teleport { distance, chance } => {
-                println!("flee {}", enemy_translation);
                 let mut rng = rand::rng();
                 let random: f32 = rng.random();
                 if random < chance {
@@ -185,12 +213,15 @@ fn apply_velocity(time: Res<Time>, mut q_enemies: Query<(&mut Transform, &Veloci
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         alien(&asset_server),
-        Transform::from_translation(Vec3::new(-100.0, 150.0, 3.0)),
+        Transform::from_translation(Vec3::new(-200.0, 150.0, 3.0)),
     ));
-
+    commands.spawn((
+        stalker(&asset_server),
+        Transform::from_translation(Vec3::new(500.0, -50.0, 3.0)),
+    ));
     commands.spawn((
         teleporting_alien(&asset_server),
-        Transform::from_translation(Vec3::new(250.0, -50.0, 3.0)),
+        Transform::from_translation(Vec3::new(50.0, -400.0, 3.0)),
     ));
 }
 
