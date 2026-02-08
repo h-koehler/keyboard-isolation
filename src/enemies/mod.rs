@@ -1,12 +1,11 @@
 use crate::{
     character_controls::Character,
-    light::CheckInLight,
-    room::{Movable, ROOM_HEIGHT, ROOM_WIDTH},
-    ui::UI_HEIGHT,
+    light::{CheckInLight, InLight},
+    room::Movable,
 };
 use bevy::prelude::*;
-
-const ROOM_INSET: f32 = 4.0;
+use rand::Rng;
+use std::f32::consts::FRAC_PI_2;
 
 #[derive(Component)]
 pub struct Enemy;
@@ -17,10 +16,25 @@ pub struct TrackPlayer {
     speed: f32,
 }
 
+#[derive(Component)]
+pub struct Teleport {
+    distance: f32,
+    chance: f32,
+}
+
+pub enum FleeAction {
+    Walk(f32),
+    Teleport(f32),
+}
+
+#[derive(Component)]
+pub struct FleeLight {
+    action: FleeAction,
+}
+
 fn alien(asset_server: &AssetServer) -> impl Bundle {
     (
-        Name::new("Enemy"),
-        CheckInLight(45.0),
+        Name::new("Alien"),
         Enemy,
         Movable,
         Velocity::default(),
@@ -36,15 +50,46 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
+fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
+    (
+        Name::new("Teleporting Alien"),
+        CheckInLight(45.0),
+        Enemy,
+        Movable,
+        Velocity::default(),
+        TrackPlayer {
+            radius: 500.0,
+            speed: 20.0,
+        },
+        Teleport {
+            distance: 500.0,
+            chance: 0.001,
+        },
+        FleeLight {
+            action: FleeAction::Teleport(50.0),
+        },
+        Sprite {
+            image: asset_server.load("teleporting_alien.png"),
+            custom_size: Some(Vec2::splat(45.0)),
+            ..Default::default()
+        },
+    )
+}
+
 #[derive(Component, Default)]
 pub struct Velocity {
     pub linear_velocity: Vec2,
 }
 
 fn track_player(
-    mut q_enemies: Query<(&TrackPlayer, &mut Transform, &mut Velocity), Without<Character>>,
+    mut q_enemies: Query<
+        (&TrackPlayer, &mut Transform, &mut Velocity),
+        (
+            Without<Character>,
+            Or<(Without<InLight>, Without<FleeLight>)>,
+        ),
+    >,
     mut q_player: Query<&Transform, With<Character>>,
-    // profiles: Res<PlayerProfiles>,
 ) {
     let player_transform = q_player.single_mut().expect("No Player Object");
     let player_translation = player_transform.translation.truncate();
@@ -56,53 +101,73 @@ fn track_player(
             enemy_velocity.linear_velocity = enemy_velocity
                 .linear_velocity
                 .lerp(dir * track_player.speed, 0.5);
-
-            // If we want to change the enemy sprites based on direction.
-            // let dir_abs = dir.abs();
-            // let x_greater_than_y = dir_abs.x > dir_abs.y;
-            // sprite.image = if x_greater_than_y {
-            //     if dir.x > 0.0 {
-            //         profiles.right.clone()
-            //     } else {
-            //         profiles.left.clone()
-            //     }
-            // } else {
-            //     if dir.y > 0.0 {
-            //         profiles.up.clone()
-            //     } else {
-            //         profiles.down.clone()
-            //     }
-            // };
         } else {
             enemy_velocity.linear_velocity = enemy_velocity.linear_velocity.lerp(Vec2::ZERO, 0.5);
         }
     }
 }
 
-fn apply_velocity(
-    time: Res<Time>,
-    mut q_enemies: Query<(&mut Transform, &Velocity, &Sprite), With<Enemy>>,
+fn teleport(
+    mut q_enemies: Query<
+        (&Teleport, &mut Transform),
+        (
+            Without<Character>,
+            Or<(Without<InLight>, Without<FleeLight>)>,
+        ),
+    >,
+    mut q_player: Query<&Transform, With<Character>>,
 ) {
+    let player_transform = q_player.single_mut().expect("No Player Object");
+    let player_translation = player_transform.translation.truncate();
+    let mut rng = rand::rng();
+    for (teleport, mut enemy_transform) in q_enemies.iter_mut() {
+        let chance: f32 = rng.random();
+        if chance < teleport.chance {
+            let enemy_translation = enemy_transform.translation.truncate();
+            let dir = (player_translation - enemy_translation).normalize_or_zero();
+            let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
+            let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+            let distance_multiplier = rng.random_range(0.5..1.0);
+            enemy_transform.translation +=
+                (wiggled_dir * (teleport.distance * distance_multiplier)).extend(0.0);
+        }
+    }
+}
+
+fn flee_light(
+    mut q_enemies: Query<
+        (&FleeLight, &mut Transform, &mut Velocity),
+        (With<InLight>, Without<Character>),
+    >,
+    mut q_player: Query<&Transform, With<Character>>,
+) {
+    let player_transform = q_player.single_mut().expect("No Player Object");
+    let player_translation = player_transform.translation.truncate();
+    for (flee_light, mut enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
+        let enemy_translation = enemy_transform.translation.truncate();
+        let dir = (enemy_translation - player_translation).normalize_or_zero();
+        match flee_light.action {
+            FleeAction::Walk(speed) => {
+                enemy_velocity.linear_velocity =
+                    enemy_velocity.linear_velocity.lerp(dir * speed, 0.5);
+            }
+            FleeAction::Teleport(distance) => {
+                let mut rng = rand::rng();
+                let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
+                let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+                enemy_transform.translation =
+                    enemy_transform.translation + (wiggled_dir * distance).extend(0.0);
+                println!("{}", enemy_transform.translation);
+            }
+        }
+    }
+}
+
+fn apply_velocity(time: Res<Time>, mut q_enemies: Query<(&mut Transform, &Velocity), With<Enemy>>) {
     let dt = time.delta_secs();
-    for (mut trans, vel, sprite) in q_enemies.iter_mut() {
+    for (mut trans, vel) in q_enemies.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
-
-        let half_width = ROOM_WIDTH as f32 / 2.0;
-        let half_height = ROOM_HEIGHT as f32 / 2.0;
-
-        let sprite_size = sprite
-            .custom_size
-            .expect("Expected enemy sprite to have custom size");
-        let (half_player_width, half_player_height) = (sprite_size.x * 0.5, sprite_size.y * 0.5);
-
-        let min_x = -half_width + half_player_width + ROOM_INSET;
-        let max_x = half_width - half_player_width - ROOM_INSET;
-        let min_y = UI_HEIGHT / 2.0 + -half_height + half_player_height + ROOM_INSET;
-        let max_y = UI_HEIGHT / 2.0 + half_height - half_player_height - ROOM_INSET;
-
-        trans.translation.x = trans.translation.x.clamp(min_x, max_x);
-        trans.translation.y = trans.translation.y.clamp(min_y, max_y);
     }
 }
 
@@ -113,13 +178,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     commands.spawn((
-        alien(&asset_server),
+        teleporting_alien(&asset_server),
         Transform::from_translation(Vec3::new(250.0, -50.0, 3.0)),
     ));
 }
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, setup);
-    app.add_systems(Update, track_player);
+    app.add_systems(Update, (teleport, track_player).chain());
     app.add_systems(PostUpdate, apply_velocity);
 }
