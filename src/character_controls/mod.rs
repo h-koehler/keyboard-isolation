@@ -1,10 +1,13 @@
 use crate::{
     character_controls::flashlight::{Flashlight, FlashlightState},
+    collision::Collider,
     dialog::DialogOnClose,
     items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
+    sanity::Sanity,
     win::{CurrentState, GameState},
+    y_sort::YSort,
 };
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
@@ -13,7 +16,7 @@ use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = false;
+const DEBUG_BRIGHTNESS: bool = true;
 const MOVE_SPEED: f32 = 200.0;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 const PLAYER_ASS_PATH: &str = "player_up.png";
@@ -44,6 +47,8 @@ impl Character {
 pub enum StatusEffect {
     Slowed,
     Blind,
+    Stalked,
+    Insane,
 }
 
 #[derive(Component)]
@@ -91,7 +96,7 @@ fn player_movement_input(
         .lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
 }
 
-fn apply_velocity(
+pub(crate) fn apply_velocity(
     time: Res<Time>,
     mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
 ) {
@@ -156,11 +161,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             Character {
                 health: STARTING_HEALTH,
             },
-            CheckInLight(32.0),
-            StatusEffects(HashSet::new()),
-            CollectedItems(HashSet::new()),
-            Movable,
-            Velocity::default(),
+            (
+                Sanity::default(),
+                CheckInLight(32.0),
+                StatusEffects(HashSet::new()),
+                CollectedItems(HashSet::new()),
+                Movable,
+                Velocity::default(),
+                Collider::square(45.0),
+                YSort::default_layer(),
+            ),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
                 custom_size: Some(Vec2::splat(45.0)),

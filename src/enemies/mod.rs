@@ -26,8 +26,15 @@ pub struct Teleport {
 }
 
 pub enum FleeAction {
-    Walk(f32),
-    Teleport { distance: f32, chance: f32 },
+    Walk {
+        speed: f32,
+        maybe_direction: Option<Vec2>,
+        change_direction_chance: f32,
+    },
+    Teleport {
+        distance: f32,
+        chance: f32,
+    },
 }
 
 #[derive(Component)]
@@ -38,8 +45,13 @@ pub struct FleeLight {
 #[derive(Component)]
 pub struct Attack {
     radius: f32,
-    inflicted_status: Option<StatusEffect>,
+    inflicts_status: Option<StatusEffect>,
     cooldown: Timer,
+}
+
+#[derive(Component)]
+pub struct Stalk {
+    radius: f32,
 }
 
 fn alien(asset_server: &AssetServer) -> impl Bundle {
@@ -55,12 +67,16 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
         },
         Attack {
             radius: 45.0,
-            inflicted_status: None,
+            inflicts_status: Some(StatusEffect::Slowed),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
         CheckInLight(45.0),
         FleeLight {
-            action: FleeAction::Walk(300.0),
+            action: FleeAction::Walk {
+                speed: 300.0,
+                maybe_direction: None,
+                change_direction_chance: 0.01,
+            },
         },
         Sprite {
             image: asset_server.load("alien.png"),
@@ -81,8 +97,13 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
             speed: 20.0,
         },
         CheckInLight(45.0),
+        Stalk { radius: 350.0 },
         FleeLight {
-            action: FleeAction::Walk(500.0),
+            action: FleeAction::Walk {
+                speed: 500.0,
+                maybe_direction: None,
+                change_direction_chance: 0.05,
+            },
         },
         Sprite {
             image: asset_server.load("stalker.png"),
@@ -111,7 +132,7 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
         },
         Attack {
             radius: 45.0,
-            inflicted_status: None,
+            inflicts_status: Some(StatusEffect::Blind),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
         CheckInLight(45.0),
@@ -194,29 +215,42 @@ fn teleport(
 
 fn flee_light(
     mut q_enemies: Query<
-        (&FleeLight, &mut Transform, &mut Velocity),
+        (&mut FleeLight, &mut Transform, &mut Velocity),
         (With<InLight>, Without<Character>),
     >,
     mut q_player: Query<&Transform, With<Character>>,
 ) {
     let player_transform = q_player.single_mut().expect("No Player Object");
     let player_translation = player_transform.translation.truncate();
-    for (flee_light, mut enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
+    for (mut flee_light, mut enemy_transform, mut enemy_velocity) in q_enemies.iter_mut() {
         let enemy_translation = enemy_transform.translation.truncate();
         let dir = (enemy_translation - player_translation).normalize_or_zero();
-        match flee_light.action {
-            FleeAction::Walk(speed) => {
+        let mut rng = rand::rng();
+        let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
+        let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+        let random: f32 = rng.random();
+        match &mut flee_light.action {
+            FleeAction::Walk {
+                speed,
+                maybe_direction,
+                change_direction_chance,
+            } => {
+                if random < *change_direction_chance {
+                    *maybe_direction = Some(wiggled_dir);
+                }
+                let dir = if let Some(direction) = maybe_direction {
+                    *direction
+                } else {
+                    *maybe_direction = Some(wiggled_dir);
+                    wiggled_dir
+                };
                 enemy_velocity.linear_velocity =
-                    enemy_velocity.linear_velocity.lerp(dir * speed, 0.5);
+                    enemy_velocity.linear_velocity.lerp(*speed * dir, 0.5);
             }
             FleeAction::Teleport { distance, chance } => {
-                let mut rng = rand::rng();
-                let random: f32 = rng.random();
-                if random < chance {
-                    let random_angle = rng.random_range(-FRAC_PI_2..=FRAC_PI_2);
-                    let wiggled_dir = Vec2::from_angle(random_angle).rotate(dir);
+                if random < *chance {
                     enemy_transform.translation =
-                        enemy_transform.translation + (wiggled_dir * distance).extend(0.0);
+                        enemy_transform.translation + (*distance * wiggled_dir).extend(0.0);
                 }
             }
         }
@@ -237,11 +271,30 @@ fn attack_player(
         let distance = (enemy_translation - player_translation).length();
         if distance <= attack.radius && attack.cooldown.is_finished() {
             player_character.take_damage();
-            if let Some(inflicted_status) = attack.inflicted_status {
-                player_status_effects.add_effect(inflicted_status);
+            if let Some(inflicts_status) = attack.inflicts_status {
+                player_status_effects.add_effect(inflicts_status);
             }
             attack.cooldown.reset();
         }
+    }
+}
+
+fn stalk_player(
+    mut q_enemies: Query<(&mut Stalk, &Transform), Without<Character>>,
+    mut q_player: Query<(&Transform, &mut StatusEffects)>,
+) {
+    let (player_transform, mut player_status_effects) =
+        q_player.single_mut().expect("No Player Object");
+    let player_translation = player_transform.translation.truncate();
+    let is_stalked = q_enemies.iter_mut().any(|(stalk, enemy_transform)| {
+        let enemy_translation = enemy_transform.translation.truncate();
+        let distance = (enemy_translation - player_translation).length();
+        distance <= stalk.radius
+    });
+    if is_stalked {
+        player_status_effects.add_effect(StatusEffect::Stalked);
+    } else {
+        player_status_effects.remove_effect(StatusEffect::Stalked);
     }
 }
 
@@ -277,6 +330,7 @@ pub(super) fn register(app: &mut App) {
             track_player,
             flee_light,
             apply_velocity,
+            stalk_player,
             attack_player,
         )
             .chain(),

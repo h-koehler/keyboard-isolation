@@ -3,7 +3,6 @@ use bevy::prelude::*;
 #[derive(Component)]
 #[require(Sprite, AnimationState)]
 pub struct AnimateSprite {
-    pub n_frames: u32,
     pub fps: u32,
 }
 
@@ -27,7 +26,7 @@ impl AnimationState {
         self.frame = frame;
     }
 
-    fn tick(&mut self, delta: f32, config: &AnimateSprite) {
+    fn tick(&mut self, delta: f32, config: &AnimateSprite, n_frames: u32) {
         if self.frozen {
             return;
         };
@@ -39,20 +38,26 @@ impl AnimationState {
             self.time -= time_per_frame;
             self.frame += 1;
         }
-        self.frame %= config.n_frames;
+        self.frame %= n_frames;
     }
 }
 
 fn execute_animations(
     time: Res<Time>,
     mut query: Query<(&AnimateSprite, &mut AnimationState, &mut Sprite)>,
+    texture_atlas_layouts: Res<Assets<TextureAtlasLayout>>,
 ) {
     for (config, mut state, mut sprite) in &mut query {
-        state.tick(time.delta_secs(), config);
-
         let Some(atlas) = &mut sprite.texture_atlas else {
             continue;
         };
+
+        let n_frames = texture_atlas_layouts
+            .get(&atlas.layout)
+            .unwrap()
+            .textures
+            .len() as u32;
+        state.tick(time.delta_secs(), config, n_frames);
 
         if atlas.index != state.frame as usize {
             atlas.index = state.frame as usize;
