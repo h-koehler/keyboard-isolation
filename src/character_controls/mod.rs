@@ -46,6 +46,8 @@ impl Character {
 pub enum StatusEffect {
     Slowed,
     Blind,
+    Stalked,
+    Insane,
 }
 
 #[derive(Component)]

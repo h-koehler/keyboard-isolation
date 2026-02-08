@@ -2,8 +2,6 @@ use std::time::Duration;
 
 use bevy::{color::palettes::css, prelude::*};
 
-use crate::character_controls::Character;
-
 pub mod body;
 pub mod player_sanity;
 
