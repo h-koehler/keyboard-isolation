@@ -1,7 +1,11 @@
 use bevy::prelude::*;
 use bevy_lit::prelude::PointLight2d;
 
-use crate::{character_controls::Character, dialog::DialogOnClose};
+use crate::{
+    character_controls::{Character, flashlight::Flashlight},
+    dialog::{Dialog, DialogOnClose},
+    sanity::body::{DeadFriend, DeadSO, dead_body},
+};
 
 #[derive(Component)]
 #[require(Transform)]
@@ -47,19 +51,54 @@ fn blink_checkpoint(
     }
 }
 
-fn done_checkpoint(mut q_done: Query<&mut PointLight2d, Added<CheckpointDone>>) {
+fn done_checkpoint(
+    mut q_done: Query<&mut PointLight2d, Added<CheckpointDone>>,
+    mut q_flashlight: Query<&mut Flashlight>,
+) {
     for mut light in q_done.iter_mut() {
         light.intensity = 1.0;
         light.outer_radius = 320.0;
+
+        if let Ok(mut flashlight) = q_flashlight.single_mut() {
+            flashlight.battery = flashlight.max_charge;
+        }
     }
 }
 
-fn spawn_checkpoint(mut commands: Commands) {
-    commands.spawn((
+fn checkpoint(asset_server: &AssetServer, text: impl Into<Dialog>) -> impl Bundle {
+    (
         Checkpoint,
         CheckpointBlinking::default(),
-        DialogOnClose("This is a really cool checkpoint!".into()),
+        DialogOnClose(text.into()),
+        Sprite {
+            image: asset_server.load("checkpoint.png"),
+            ..Default::default()
+        },
+    )
+}
+
+fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn((
         Transform::from_translation(Vec3::new(0.0, 400.0, 0.0)),
+        checkpoint(
+            &asset_server,
+            "A recharge station! I should be safe here. Maybe my friends are at other stations?",
+        ),
+    ));
+
+    commands.spawn((
+        Transform::from_translation(Vec3::new(-400.0, 0.0, 0.0)),
+        checkpoint(&asset_server, "2"),
+    ));
+
+    commands.spawn((
+        Transform::from_translation(Vec3::new(400.0, 0.0, 0.0)),
+        checkpoint(&asset_server, "3"),
+    ));
+
+    commands.spawn((
+        Transform::from_translation(Vec3::new(450.0, 200.0, 0.0)),
+        dead_body::<DeadSO>(asset_server, "dead_person_red.png"),
     ));
 }
 

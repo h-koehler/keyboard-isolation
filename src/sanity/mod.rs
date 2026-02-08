@@ -4,8 +4,11 @@ use bevy::{color::palettes::css, prelude::*};
 
 use crate::character_controls::Character;
 
+pub mod body;
+pub mod player_sanity;
+
 #[derive(Component, Debug, PartialEq, PartialOrd, Reflect)]
-#[require(SanityBlockers)]
+#[require(SanityBlockers, SanityAmplifiers)]
 pub struct Sanity(f32);
 
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Reflect)]
@@ -48,8 +51,18 @@ pub struct SanityBoost {
     pub duration: Duration,
 }
 
-#[derive(Clone, Component, Debug, PartialEq, PartialOrd, Reflect)]
+#[derive(Clone, Component, Debug, PartialEq, PartialOrd, Reflect, Default)]
 pub struct SanityAmplifiers(Vec<SanityAmplifier>);
+
+impl SanityAmplifiers {
+    pub fn add_amplifier(&mut self, amplifier: SanityAmplifier) {
+        self.0.push(amplifier);
+    }
+
+    pub fn multiplier(&self) -> f32 {
+        1.0 + self.0.iter().map(|x| x.amount).sum::<f32>()
+    }
+}
 
 impl Default for Sanity {
     fn default() -> Self {
@@ -60,6 +73,26 @@ impl Default for Sanity {
 impl Sanity {
     pub fn new(amt: f32) -> Self {
         Self(amt.clamp(0.0, 100.0))
+    }
+
+    pub fn clamp(&mut self, blockers: &SanityBlockers) {
+        self.0 = self.0.clamp(0.0, blockers.maximum_sanity().0);
+    }
+
+    pub fn decrease_sanity(&mut self, amount_to_remove: f32, amplifiers: &SanityAmplifiers) {
+        *self = Self::new(self.0 - amount_to_remove * amplifiers.multiplier());
+    }
+
+    pub fn increase_sanity(
+        &mut self,
+        amount_to_increase: f32,
+        amplifiers: &SanityAmplifiers,
+        blockers: &SanityBlockers,
+    ) {
+        *self = Self::new(
+            (self.0 + amount_to_increase * amplifiers.multiplier())
+                .min(blockers.maximum_sanity().0),
+        );
     }
 }
 
@@ -73,6 +106,10 @@ impl SanityBlockers {
         }
 
         self.0.retain(|x| x.0.duration.as_secs_f32() < x.1);
+    }
+
+    pub fn add_blocker(&mut self, blocker: SanityBlocker) {
+        self.0.push((blocker, 0.0));
     }
 
     pub fn maximum_sanity(&self) -> Sanity {
@@ -175,6 +212,9 @@ fn tick_sanity(mut q_sanity: Query<&mut SanityBlockers>, time: Res<Time>) {
 }
 
 pub(super) fn register(app: &mut App) {
+    player_sanity::register(app);
+    body::register(app);
+
     app.add_systems(
         Update,
         (

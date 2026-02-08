@@ -1,5 +1,5 @@
 use crate::{
-    character_controls::Character,
+    character_controls::{Character, StatusEffect, StatusEffects},
     light::{CheckInLight, InLight},
     room::Movable,
 };
@@ -35,6 +35,13 @@ pub struct FleeLight {
     action: FleeAction,
 }
 
+#[derive(Component)]
+pub struct Attack {
+    radius: f32,
+    inflicted_status: Option<StatusEffect>,
+    cooldown: Timer,
+}
+
 fn alien(asset_server: &AssetServer) -> impl Bundle {
     (
         Name::new("Alien"),
@@ -43,8 +50,13 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
         Velocity::default(),
         TrackPlayer {
             max_radius: 300.0,
-            min_radius: 5.0,
+            min_radius: 40.0,
             speed: 100.0,
+        },
+        Attack {
+            radius: 45.0,
+            inflicted_status: None,
+            cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
         CheckInLight(45.0),
         FleeLight {
@@ -88,7 +100,7 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
         Velocity::default(),
         TrackPlayer {
             max_radius: 500.0,
-            min_radius: 10.0,
+            min_radius: 40.0,
             speed: 20.0,
         },
         Teleport {
@@ -96,6 +108,11 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
             min_radius: 50.0,
             distance: 500.0,
             chance: 0.001,
+        },
+        Attack {
+            radius: 45.0,
+            inflicted_status: None,
+            cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
         CheckInLight(45.0),
         FleeLight {
@@ -206,6 +223,28 @@ fn flee_light(
     }
 }
 
+fn attack_player(
+    mut q_enemies: Query<(&mut Attack, &Transform), Without<Character>>,
+    mut q_player: Query<(&Transform, &mut Character, &mut StatusEffects)>,
+    time: Res<Time>,
+) {
+    let (player_transform, mut player_character, mut player_status_effects) =
+        q_player.single_mut().expect("No Player Object");
+    let player_translation = player_transform.translation.truncate();
+    for (mut attack, enemy_transform) in q_enemies.iter_mut() {
+        attack.cooldown.tick(time.delta());
+        let enemy_translation = enemy_transform.translation.truncate();
+        let distance = (enemy_translation - player_translation).length();
+        if distance <= attack.radius && attack.cooldown.is_finished() {
+            player_character.take_damage();
+            if let Some(inflicted_status) = attack.inflicted_status {
+                player_status_effects.add_effect(inflicted_status);
+            }
+            attack.cooldown.reset();
+        }
+    }
+}
+
 fn apply_velocity(time: Res<Time>, mut q_enemies: Query<(&mut Transform, &Velocity), With<Enemy>>) {
     let dt = time.delta_secs();
     for (mut trans, vel) in q_enemies.iter_mut() {
@@ -231,6 +270,15 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, setup);
-    app.add_systems(Update, (teleport, track_player, flee_light).chain());
-    app.add_systems(PostUpdate, apply_velocity);
+    app.add_systems(
+        Update,
+        (
+            teleport,
+            track_player,
+            flee_light,
+            apply_velocity,
+            attack_player,
+        )
+            .chain(),
+    );
 }

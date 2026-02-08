@@ -1,8 +1,10 @@
 use crate::{
-    character_controls::flashlight::Flashlight,
+    character_controls::flashlight::{Flashlight, FlashlightState},
+    dialog::DialogOnClose,
     items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
+    win::{CurrentState, GameState},
 };
 use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
@@ -21,6 +23,20 @@ pub const STARTING_HEALTH: i8 = 3;
 #[derive(Component)]
 pub struct Character {
     pub health: i8,
+}
+
+impl Character {
+    pub fn take_damage(&mut self) {
+        if self.health > 0 {
+            self.health -= 1;
+        }
+    }
+
+    pub fn heal(&mut self) {
+        if self.health < STARTING_HEALTH {
+            self.health += 1;
+        }
+    }
 }
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
@@ -119,24 +135,6 @@ fn player_rotation_input(
     }
 }
 
-fn take_damage(mut q_player: Query<&mut Character>) {
-    let mut player = q_player.single_mut().expect("No Player Object");
-    if player.health > 0 {
-        player.health -= 1;
-    } else {
-        println!("Can't take any more damage.")
-    }
-}
-
-fn heal(mut q_player: Query<&mut Character>) {
-    let mut player = q_player.single_mut().expect("No Player Object");
-    if player.health < STARTING_HEALTH {
-        player.health += 1;
-    } else {
-        println!("Can't heal any more lives.")
-    }
-}
-
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         Camera2d::default(),
@@ -152,13 +150,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             Name::new("Character"),
+            DialogOnClose("It's amazing I survived the crash...".into()),
             Character {
                 health: STARTING_HEALTH,
             },
+            CheckInLight(32.0),
             StatusEffects(HashSet::new()),
             CollectedItems(HashSet::new()),
             Movable,
-            CheckInLight(1.0),
             Velocity::default(),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
@@ -174,12 +173,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 falloff: 4.0,
                 ..default()
             },
+            CurrentState(GameState::Collecting),
         ))
         .with_children(|p| {
             p.spawn((
                 Flashlight {
                     battery: 20.0,
                     max_charge: 20.0,
+                    state: FlashlightState::Lost,
                 },
                 SpotLight2d {
                     intensity: 0.0,
@@ -190,23 +191,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
         });
 }
-
-// #[derive(Resource)]
-// struct PlayerProfiles {
-//     left: Handle<Image>,
-//     right: Handle<Image>,
-//     up: Handle<Image>,
-//     down: Handle<Image>,
-// }
-
-// fn load_profiles(mut commands: Commands, asset_server: Res<AssetServer>) {
-//     // commands.insert_resource(PlayerProfiles {
-//     //     up: asset_server.load("player_up.png"),
-//     //     down: asset_server.load("player.png"),
-//     //     left: asset_server.load("player_left.png"),
-//     //     right: asset_server.load("player_right.png"),
-//     // });
-// }
 
 fn camera_follow_player(
     mut q_cam: Query<&mut Transform, With<Camera2d>>,
