@@ -129,7 +129,29 @@ fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
         Transform::from_translation(Vec3::new(0.0, 400.0, 0.0)),
         checkpoint(
             &asset_server,
-            "A recharge station! I should be safe here. Maybe my friends are at other stations?",
+            "A recharge station! You should be safe here. You need to find Josephine, she was close by when the ship started to go down.",
+        ),
+    ));
+
+    commands.spawn((
+        Transform::from_translation(Vec3::new(-6000.0, 2500.0, 0.0)),
+        checkpoint(
+            &asset_server,
+            "Dread overwhelms you as you look upon the mauled body of your captain, a gruesome reminder of your fate if you don't keep moving.",
+        ),
+    ));
+        commands.spawn((
+        Transform::from_translation(Vec3::new(6000.0, 2500.0, 0.0)),
+        checkpoint(
+            &asset_server,
+            "A medpack! Finally, a break in your luck.",
+        ),
+    ));
+        commands.spawn((
+        Transform::from_translation(Vec3::new(3500.0, -2800.0, 0.0)),
+        checkpoint(
+            &asset_server,
+            "You avert your eyes as you approach a corpse that resembles your wife. Grief has to wait, yet you take time to mutter a prayer that she passed before running into any of this planet's inhabitants",
         ),
     ));
 
