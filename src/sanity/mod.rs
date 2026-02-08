@@ -130,12 +130,6 @@ impl SanityBlockers {
     }
 }
 
-fn add_sanity(mut commands: Commands, q_player: Query<Entity, Added<Character>>) {
-    for e in q_player.iter() {
-        commands.entity(e).insert(Sanity::default());
-    }
-}
-
 fn clamp_sanity_to_max(mut q_sanity: Query<(&mut Sanity, &SanityBlockers)>) {
     for (mut sanity, blockers) in q_sanity.iter_mut() {
         let max = blockers.maximum_sanity();
@@ -274,13 +268,7 @@ pub(super) fn register(app: &mut App) {
 
     app.add_systems(
         Update,
-        (
-            add_sanity,
-            tick_sanity,
-            clamp_sanity_to_max,
-            update_sanity_bar,
-        )
-            .chain(),
+        (tick_sanity, clamp_sanity_to_max, update_sanity_bar).chain(),
     )
     .add_systems(Startup, add_sanity_bar);
 }

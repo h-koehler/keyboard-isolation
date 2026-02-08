@@ -1,11 +1,12 @@
 use crate::{
     character_controls::flashlight::{Flashlight, FlashlightState},
+    collision::Collider,
     dialog::DialogOnClose,
     items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
     room::Movable,
+    sanity::Sanity,
     win::{CurrentState, GameState},
-    collision::Collider,
     y_sort::YSort,
 };
 use bevy::platform::collections::HashSet;
@@ -155,13 +156,16 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             Character {
                 health: STARTING_HEALTH,
             },
-            CheckInLight(32.0),
-            StatusEffects(HashSet::new()),
-            CollectedItems(HashSet::new()),
-            Movable,
-            Velocity::default(),
-            Collider::square(45.0),
-            YSort::default_layer(),
+            (
+                Sanity::default(),
+                CheckInLight(32.0),
+                StatusEffects(HashSet::new()),
+                CollectedItems(HashSet::new()),
+                Movable,
+                Velocity::default(),
+                Collider::square(45.0),
+                YSort::default_layer(),
+            ),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
                 custom_size: Some(Vec2::splat(45.0)),
