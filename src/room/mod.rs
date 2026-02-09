@@ -7,9 +7,10 @@ use bevy_kira_audio::{
 use bevy_lit::prelude::PointLight2d;
 
 use crate::{
-    animation::{AnimateSprite, AnimationState},
+    animation::AnimateSprite,
+    anim_clips::fire_clips,
     assets::{LoadAssetsSet, load_atlas},
-    collision::room_objects::spawn_crash_site_objects,
+    collision::room_objects::{spawn_crash_site_objects, spawn_deadbody_objects, spawn_joe_objects},
     ui::UI_HEIGHT,
 };
 
@@ -41,8 +42,7 @@ fn fire(fire_asset: &FireAsset, audio: &Audio, asset_server: &AssetServer) -> im
         .loop_until(1.0)
         .handle();
     (
-        AnimateSprite { fps: 10 },
-        AnimationState::new(rand::random_range(0..7)),
+        AnimateSprite { default_fps: 10, anim_state: 0, clips: fire_clips },
         PointLight2d {
             inner_radius: 0.0,
             outer_radius: 400.0,
@@ -138,6 +138,8 @@ fn setup_room(
         fire(&fire_asset, &audio, &asset_server),
     ));
     spawn_crash_site_objects(&mut commands, &asset_server);
+    spawn_deadbody_objects(&mut commands, &asset_server);
+    spawn_joe_objects(&mut commands, &asset_server);
 }
 
 #[derive(Resource)]
