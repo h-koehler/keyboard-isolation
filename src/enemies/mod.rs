@@ -72,13 +72,13 @@ pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bund
         Velocity::default(),
         TrackPlayer {
             max_radius: 500.0,
-            min_radius: 40.0,
-            speed: 200.0,
+            min_radius: 50.0,
+            speed: 140.0,
         },
         Attack {
-            radius: 45.0,
+            radius: 55.0,
             inflicts_status: Some(StatusEffect::Slowed),
-            cooldown: Timer::from_seconds(2.0, TimerMode::Once),
+            cooldown: Timer::from_seconds(4.0, TimerMode::Once),
         },
         FleeLight {
             action: FleeAction::Walk {

@@ -73,8 +73,8 @@ fn spawn_enemy(
     player_spawn_enemies.stopwatch.tick(time.delta());
     let time_to_spawn_enemies = match player_sanity.0 {
         0.0..25.0 => 5.0,
-        25.0..75.0 => 15.0,
-        _ => 30.0,
+        25.0..75.0 => 10.0,
+        _ => 20.0,
     };
     if player_spawn_enemies.stopwatch.elapsed_secs() > time_to_spawn_enemies {
         let mut rng = rand::rng();
