@@ -71,9 +71,9 @@ pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bund
         Movable,
         Velocity::default(),
         TrackPlayer {
-            max_radius: 300.0,
+            max_radius: 500.0,
             min_radius: 40.0,
-            speed: 100.0,
+            speed: 200.0,
         },
         Attack {
             radius: 45.0,
@@ -145,7 +145,7 @@ pub fn stalker(
         TrackPlayer {
             max_radius: f32::INFINITY,
             min_radius: 300.0,
-            speed: 20.0,
+            speed: 40.0,
         },
         Stalk { radius: 350.0 },
         FleeLight {
@@ -181,12 +181,12 @@ pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) 
         Movable,
         Velocity::default(),
         TrackPlayer {
-            max_radius: 500.0,
+            max_radius: 1000.0,
             min_radius: 40.0,
-            speed: 20.0,
+            speed: 40.0,
         },
         Teleport {
-            max_radius: 750.0,
+            max_radius: 1500.0,
             min_radius: 50.0,
             distance: 500.0,
             chance: 0.001,

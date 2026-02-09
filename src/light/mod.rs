@@ -72,9 +72,9 @@ fn spawn_enemy(
         q_player.single_mut().expect("No Player Object");
     player_spawn_enemies.stopwatch.tick(time.delta());
     let time_to_spawn_enemies = match player_sanity.0 {
-        0.0..25.0 => 10.0,
-        25.0..75.0 => 30.0,
-        _ => 60.0,
+        0.0..25.0 => 5.0,
+        25.0..75.0 => 15.0,
+        _ => 30.0,
     };
     if player_spawn_enemies.stopwatch.elapsed_secs() > time_to_spawn_enemies {
         let mut rng = rand::rng();
