@@ -140,14 +140,11 @@ fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
             "Dread overwhelms you as you look upon the mauled body of your captain, a gruesome reminder of your fate if you don't keep moving.",
         ),
     ));
-        commands.spawn((
+    commands.spawn((
         Transform::from_translation(Vec3::new(6000.0, 2500.0, 0.0)),
-        checkpoint(
-            &asset_server,
-            "A medpack! Finally, a break in your luck.",
-        ),
+        checkpoint(&asset_server, "A medpack! Finally, a break in your luck."),
     ));
-        commands.spawn((
+    commands.spawn((
         Transform::from_translation(Vec3::new(3500.0, -2800.0, 0.0)),
         checkpoint(
             &asset_server,
@@ -167,7 +164,7 @@ fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn((
         Transform::from_translation(Vec3::new(450.0, 200.0, 0.0)),
-        dead_body::<DeadSO>(asset_server, "dead_person_red.png"),
+        dead_body::<DeadSO>(asset_server, "dead_wife.png"),
     ));
 }
 
