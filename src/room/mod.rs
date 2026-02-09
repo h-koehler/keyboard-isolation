@@ -3,6 +3,7 @@ use bevy_lit::prelude::PointLight2d;
 
 use crate::{
     animation::AnimateSprite,
+    anim_clips::fire_clips,
     assets::{LoadAssetsSet, load_atlas},
     ui::UI_HEIGHT,
     collision::room_objects::spawn_crash_site_objects
@@ -19,7 +20,7 @@ pub const ROOM_WIDTH: u32 = 1100;
 
 fn fire(fire_asset: &FireAsset) -> impl Bundle {
     (
-        AnimateSprite { fps: 10 },
+        AnimateSprite { default_fps: 10, anim_state: 0, clips: fire_clips },
         PointLight2d {
             inner_radius: 0.0,
             outer_radius: 400.0,
