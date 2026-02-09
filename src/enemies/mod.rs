@@ -1,5 +1,6 @@
 use crate::{
     character_controls::{Character, Hurt, StatusEffect, StatusEffects},
+    checkpoint::TimeTilNextPlay,
     light::InLight,
     room::Movable,
 };
