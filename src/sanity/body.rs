@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     character_controls::StatusEffects,
     light::{CheckInLight, InLight},
+    menu::Playing,
     sanity::{
         DEAD_FRIEND_SANITY_BLOCKER, DEAD_SO_SANITY_AMPLIFIER, DEAD_SO_SANITY_BLOCKER, Sanity,
         SanityAmplifiers, SanityBlockers,
@@ -83,5 +84,5 @@ fn on_near_dead_body(
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Update, on_near_dead_body);
+    app.add_systems(Update, on_near_dead_body.run_if(resource_exists::<Playing>));
 }
