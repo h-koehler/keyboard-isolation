@@ -3,26 +3,28 @@ use crate::{
     animation::AnimationState,
     anim_clips::PLAYER_CLIPS,
     character_controls::flashlight::{Flashlight, FlashlightState},
+    collision::Collider,
     dialog::DialogOnClose,
     items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
+    menu::Playing,
     room::Movable,
     assets::{LoadAssetsSet, load_atlas},
+    sanity::Sanity,
     win::{CurrentState, GameState},
-    collision::Collider
 };
-use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
+use bevy::{platform::collections::HashSet, time::Stopwatch};
+use bevy_kira_audio::SpatialAudioReceiver;
 use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = true;
-const MOVE_SPEED: f32 = 200.0;
+const DEBUG_BRIGHTNESS: bool = false;
+const BASE_MOVE_SPEED: f32 = 200.0;
+const SLOWED_MULTIPLIER: f32 = 0.7;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
 pub const STARTING_HEALTH: i8 = 3;
-// const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
-// const ROOM_INSET: f32 = 4.0;
 
 #[derive(Component)]
 pub struct Character {
@@ -48,15 +50,20 @@ pub struct PlayerAsset {
     image: Handle<Image>,
     layout: Handle<TextureAtlasLayout>,
 }
+#[derive(Component)]
+pub struct SpawnEnemies {
+    pub stopwatch: Stopwatch,
+}
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy)]
 pub enum StatusEffect {
     Slowed,
-    Blind,
+    Stalked,
+    Insane,
 }
 
 #[derive(Component)]
-pub struct StatusEffects(HashSet<StatusEffect>);
+pub struct StatusEffects(pub HashSet<StatusEffect>);
 
 impl StatusEffects {
     pub fn add_effect(&mut self, status_effect: StatusEffect) {
@@ -77,12 +84,19 @@ pub struct Velocity {
     pub linear_velocity: Vec2,
 }
 
+fn get_speed(status_effects: &StatusEffects) -> f32 {
+    if status_effects.0.contains(&StatusEffect::Slowed) {
+        BASE_MOVE_SPEED * SLOWED_MULTIPLIER
+    } else {
+        BASE_MOVE_SPEED
+    }
+}
+
 fn player_movement_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Velocity, &mut AnimationState), With<Character>>,
+    mut q_player: Query<(&mut Velocity, &mut AnimationState, &StatusEffects), With<Character>>,
 ) {
-    let (mut vel, mut anim) = q_player.single_mut().expect("No Player Object");
-
+    let (mut vel, mut anim,status_effects) = q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::KeyA) { dir.x -= 1.0; }
     if inputs.pressed(KeyCode::KeyD) { dir.x += 1.0; }
@@ -95,8 +109,10 @@ fn player_movement_input(
     } else {
         anim.set_anim_state(1);
     }
-
-    vel.linear_velocity = vel.linear_velocity.lerp(dir.normalize_or_zero() * MOVE_SPEED, 0.5);
+    let speed = get_speed(status_effects);
+    vel.linear_velocity = vel
+        .linear_velocity
+        .lerp(dir.normalize_or_zero() * speed, 0.5);
 }
 
 pub(crate) fn apply_velocity(
@@ -112,9 +128,9 @@ pub(crate) fn apply_velocity(
 
 fn player_rotation_input(
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Transform, &Velocity), With<Character>>,
+    mut q_player: Query<(&mut Transform, &Velocity, &StatusEffects), With<Character>>,
 ) {
-    let (mut trans, velocity) = q_player.single_mut().expect("No Player Object");
+    let (mut trans, velocity, status_effects) = q_player.single_mut().expect("No Player Object");
 
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::ArrowLeft) {
@@ -131,7 +147,8 @@ fn player_rotation_input(
     }
 
     if dir.length() < f32::EPSILON
-        && velocity.linear_velocity.length() > MOVE_SPEED * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
+        && velocity.linear_velocity.length()
+            > get_speed(status_effects) * MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE
     {
         dir = velocity.linear_velocity;
     }
@@ -143,16 +160,25 @@ fn player_rotation_input(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: Res<PlayerAsset>) {
-    commands.spawn((
-        Camera2d::default(),
-        Lighting2dSettings {
-            ..Default::default()
-        },
-        AmbientLight2d {
-            intensity: if DEBUG_BRIGHTNESS { 0.1 } else { 0.0 }, // More like darkness amiright,
-            ..Default::default()
-        },
-    ));
+    commands
+        .spawn((
+            Camera2d::default(),
+            Lighting2dSettings {
+                penetration: PenetrationSettings {
+                    max: 30.0,
+                    intensity: 1.0,
+                    falloff: 1.0,
+                    sample_directions: 16,
+                    sample_steps: 8,
+                },
+                ..Default::default()
+            },
+            AmbientLight2d {
+                intensity: if DEBUG_BRIGHTNESS { 0.1 } else { 0.0 }, // More like darkness amiright,
+                ..Default::default()
+            },
+        ))
+        .insert(SpatialAudioReceiver);
 
     commands
         .spawn((
@@ -162,17 +188,19 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: R
             Character {
                 health: STARTING_HEALTH,
             },
-            CheckInLight(32.0),
-            StatusEffects(HashSet::new()),
-            CollectedItems(HashSet::new()),
-            Movable,
-            Velocity::default(),
-            Collider::square(45.0),
-            // Sprite {
-            //     image: asset_server.load(PLAYER_ASS_PATH),
-            //     custom_size: Some(Vec2::splat(45.0)),
-            //     ..Default::default()
+            // Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+            // LightOccluder2d {
+            //     occluder_mask: asset_server.load(PLAYER_ASS_PATH),
             // },
+            (
+                Sanity::default(),
+                CheckInLight(32.0),
+                StatusEffects(HashSet::new()),
+                CollectedItems(HashSet::new()),
+                Movable,
+                Velocity::default(),
+                Collider::square(45.0),
+            ),
             Sprite {
                 image: player_asset.image.clone(),
                 texture_atlas: Some(TextureAtlas {
@@ -181,7 +209,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: R
                 }),
                 ..Default::default()
             },
-            Transform::from_translation(Vec3::Z * 3.0),
+            Transform::from_translation(Vec3::Z * 0.0),
             IgnoreInLightCheckLight,
             PointLight2d {
                 inner_radius: 0.0,
@@ -191,6 +219,9 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: R
                 ..default()
             },
             CurrentState(GameState::Collecting),
+            SpawnEnemies {
+                stopwatch: Stopwatch::new(),
+            },
         ))
         .with_children(|p| {
             p.spawn((
@@ -229,7 +260,10 @@ pub(super) fn register(app: &mut App) {
     flashlight::register(app);
 
     app.add_systems(Startup, (setup.after(LoadAssetsSet/*load_profiles*/)));
-    app.add_systems(Update, player_movement_input);
+    app.add_systems(
+        Update,
+        player_movement_input.run_if(resource_exists::<Playing>),
+    );
     app.add_systems(
         PostUpdate,
         (apply_velocity, player_rotation_input, camera_follow_player).chain(),

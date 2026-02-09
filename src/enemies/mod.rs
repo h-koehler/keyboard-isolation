@@ -1,9 +1,10 @@
 use crate::{
     character_controls::{Character, StatusEffect, StatusEffects},
-    light::{CheckInLight, InLight},
+    light::InLight,
     room::Movable,
 };
 use bevy::prelude::*;
+use bevy_lit::prelude::LightOccluder2d;
 use rand::Rng;
 use std::f32::consts::FRAC_PI_2;
 
@@ -45,14 +46,18 @@ pub struct FleeLight {
 #[derive(Component)]
 pub struct Attack {
     radius: f32,
-    inflicted_status: Option<StatusEffect>,
+    inflicts_status: Option<StatusEffect>,
     cooldown: Timer,
 }
 
-fn alien(asset_server: &AssetServer) -> impl Bundle {
+#[derive(Component)]
+pub struct Stalk {
+    radius: f32,
+}
+
+pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Alien"),
-        Enemy,
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -62,16 +67,19 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
         },
         Attack {
             radius: 45.0,
-            inflicted_status: None,
+            inflicts_status: Some(StatusEffect::Slowed),
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
-        CheckInLight(45.0),
         FleeLight {
             action: FleeAction::Walk {
                 speed: 300.0,
                 maybe_direction: None,
                 change_direction_chance: 0.01,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("alien.png"),
         },
         Sprite {
             image: asset_server.load("alien.png"),
@@ -81,9 +89,9 @@ fn alien(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-fn stalker(asset_server: &AssetServer) -> impl Bundle {
+pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
-        Enemy,
+        Name::new("Stalker"),
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -91,13 +99,17 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
             min_radius: 300.0,
             speed: 20.0,
         },
-        CheckInLight(45.0),
+        Stalk { radius: 350.0 },
         FleeLight {
             action: FleeAction::Walk {
                 speed: 500.0,
                 maybe_direction: None,
                 change_direction_chance: 0.05,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("stalker.png"),
         },
         Sprite {
             image: asset_server.load("stalker.png"),
@@ -107,10 +119,9 @@ fn stalker(asset_server: &AssetServer) -> impl Bundle {
     )
 }
 
-fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
+pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
     (
         Name::new("Teleporting Alien"),
-        Enemy,
         Movable,
         Velocity::default(),
         TrackPlayer {
@@ -126,15 +137,18 @@ fn teleporting_alien(asset_server: &AssetServer) -> impl Bundle {
         },
         Attack {
             radius: 45.0,
-            inflicted_status: None,
+            inflicts_status: None,
             cooldown: Timer::from_seconds(2.0, TimerMode::Once),
         },
-        CheckInLight(45.0),
         FleeLight {
             action: FleeAction::Teleport {
                 distance: 500.0,
-                chance: 0.01,
+                chance: 0.03,
             },
+        },
+        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        LightOccluder2d {
+            occluder_mask: asset_server.load("teleporting_alien.png"),
         },
         Sprite {
             image: asset_server.load("teleporting_alien.png"),
@@ -265,11 +279,30 @@ fn attack_player(
         let distance = (enemy_translation - player_translation).length();
         if distance <= attack.radius && attack.cooldown.is_finished() {
             player_character.take_damage();
-            if let Some(inflicted_status) = attack.inflicted_status {
-                player_status_effects.add_effect(inflicted_status);
+            if let Some(inflicts_status) = attack.inflicts_status {
+                player_status_effects.add_effect(inflicts_status);
             }
             attack.cooldown.reset();
         }
+    }
+}
+
+fn stalk_player(
+    mut q_enemies: Query<(&mut Stalk, &Transform), Without<Character>>,
+    mut q_player: Query<(&Transform, &mut StatusEffects)>,
+) {
+    let (player_transform, mut player_status_effects) =
+        q_player.single_mut().expect("No Player Object");
+    let player_translation = player_transform.translation.truncate();
+    let is_stalked = q_enemies.iter_mut().any(|(stalk, enemy_transform)| {
+        let enemy_translation = enemy_transform.translation.truncate();
+        let distance = (enemy_translation - player_translation).length();
+        distance <= stalk.radius
+    });
+    if is_stalked {
+        player_status_effects.add_effect(StatusEffect::Stalked);
+    } else {
+        player_status_effects.remove_effect(StatusEffect::Stalked);
     }
 }
 
@@ -281,23 +314,7 @@ fn apply_velocity(time: Res<Time>, mut q_enemies: Query<(&mut Transform, &Veloci
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((
-        alien(&asset_server),
-        Transform::from_translation(Vec3::new(-600.0, 350.0, 3.0)),
-    ));
-    commands.spawn((
-        stalker(&asset_server),
-        Transform::from_translation(Vec3::new(500.0, -50.0, 3.0)),
-    ));
-    commands.spawn((
-        teleporting_alien(&asset_server),
-        Transform::from_translation(Vec3::new(50.0, -400.0, 3.0)),
-    ));
-}
-
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
     app.add_systems(
         Update,
         (
@@ -305,6 +322,7 @@ pub(super) fn register(app: &mut App) {
             track_player,
             flee_light,
             apply_velocity,
+            stalk_player,
             attack_player,
         )
             .chain(),

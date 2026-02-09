@@ -1,6 +1,6 @@
 use bevy::{platform::collections::HashSet, prelude::*};
 
-use crate::character_controls::Character;
+use crate::{character_controls::Character, menu::Playing};
 
 pub const PICKUP_DIST: f32 = 50.0;
 
@@ -96,11 +96,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             "Flashlight",
             "flashlight.png",
         ),
-        Transform::from_translation(Vec3::new(200.0, 1500.0, 3.0)),
+        Transform::from_translation(Vec3::new(200.0, -350.0, 3.0)),
     ));
 }
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, setup);
-    app.add_systems(Update, pickup_item);
+    app.add_systems(Update, pickup_item.run_if(resource_exists::<Playing>));
 }

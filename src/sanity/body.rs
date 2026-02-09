@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
+    character_controls::StatusEffects,
     light::{CheckInLight, InLight},
+    menu::Playing,
     sanity::{
         DEAD_FRIEND_SANITY_BLOCKER, DEAD_SO_SANITY_AMPLIFIER, DEAD_SO_SANITY_BLOCKER, Sanity,
         SanityAmplifiers, SanityBlockers,
@@ -51,9 +53,12 @@ fn on_near_dead_body(
         &mut Sanity,
         &mut SanityBlockers,
         &mut SanityAmplifiers,
+        &StatusEffects,
     )>,
 ) {
-    let Ok((player_t, mut sanity, mut blockers, mut amplifiers)) = q_player.single_mut() else {
+    let Ok((player_t, mut sanity, mut blockers, mut amplifiers, status_effects)) =
+        q_player.single_mut()
+    else {
         return;
     };
 
@@ -75,9 +80,9 @@ fn on_near_dead_body(
 
     sanity.clamp(&blockers);
 
-    sanity.decrease_sanity(10.0, &mut amplifiers);
+    sanity.decrease_sanity(10.0, &mut amplifiers, status_effects);
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Update, on_near_dead_body);
+    app.add_systems(Update, on_near_dead_body.run_if(resource_exists::<Playing>));
 }

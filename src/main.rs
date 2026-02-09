@@ -1,5 +1,6 @@
 use bevy::{prelude::*, window::WindowResolution};
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, quick::WorldInspectorPlugin};
+use bevy_kira_audio::prelude::*;
 use bevy_lit::prelude::Lighting2dPlugin;
 
 use crate::{
@@ -11,17 +12,17 @@ pub mod animation;
 pub mod assets;
 pub mod character_controls;
 pub mod checkpoint;
+pub mod collision;
 pub mod dialog;
 pub mod dog;
 pub mod enemies;
 pub mod items;
 pub mod light;
+pub mod menu;
 pub mod room;
 pub mod sanity;
 pub mod ui;
 pub mod win;
-pub mod collision;
-pub mod y_sort;
 pub mod anim_clips;
 
 fn main() {
@@ -37,6 +38,8 @@ fn main() {
             ..Default::default()
         }),
         Lighting2dPlugin,
+        AudioPlugin,
+        SpatialAudioPlugin,
     ))
     .add_plugins(EguiPlugin::default())
     .add_plugins(WorldInspectorPlugin::default());
@@ -44,7 +47,7 @@ fn main() {
     room::register(&mut app);
     ui::register(&mut app);
     enemies::register(&mut app);
-    dog::register(&mut app);
+    // dog::register(&mut app);
     items::register(&mut app);
     win::register(&mut app);
     sanity::register(&mut app);
@@ -54,6 +57,7 @@ fn main() {
     animation::register(&mut app);
     assets::register(&mut app);
     collision::register(&mut app);
+    menu::register(&mut app);
 
     app.run();
 }

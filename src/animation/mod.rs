@@ -1,18 +1,5 @@
 use bevy::prelude::*;
 
-// #[derive(Component)]
-// #[require(Sprite, AnimationState)]
-// pub struct AnimateSprite {
-//     pub fps: u32,
-//     pub animState: u32
-// }
-
-// #[derive(Reflect, Debug, Component, Default)]
-// pub struct AnimationState {
-//     frame: u32,
-//     time: f32,
-//     animState: u32,
-// }
 #[derive(Clone, Copy)]
 pub struct AnimClip {
     pub start: u32,
