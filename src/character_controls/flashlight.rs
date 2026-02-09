@@ -1,7 +1,12 @@
 use bevy::{color::palettes::css, prelude::*};
+use bevy_kira_audio::{Audio, AudioControl, AudioSource};
+
 use bevy_lit::prelude::SpotLight2d;
 
-use crate::items::{CollectedItems, Item};
+use crate::{
+    items::{CollectedItems, Item},
+    win::SoundHandle,
+};
 
 #[derive(Component)]
 pub struct FlashlightActive;
@@ -49,6 +54,7 @@ pub fn update_flashlight(
     time: Res<Time>,
     mut commands: Commands,
     flashlight_toggle_sound: Res<FlashlightToggleSound>,
+    audio_player: Res<Audio>,
 ) {
     let enabled = inputs.pressed(KeyCode::Space);
 
@@ -62,13 +68,15 @@ pub fn update_flashlight(
                 commands.entity(ent).insert(FlashlightActive);
                 if flashlight_toggle.0 == FlashlightToggleState::Toggled {
                     flashlight_toggle.0 = FlashlightToggleState::Toggling;
-                    commands.spawn((
-                        AudioPlayer::new(flashlight_toggle_sound.0.clone()),
-                        PlaybackSettings {
-                            volume: bevy::audio::Volume::Linear(0.7),
-                            ..Default::default()
-                        },
-                    ));
+
+                    commands.spawn(
+                        (SoundHandle(
+                            audio_player
+                                .play(flashlight_toggle_sound.0.clone())
+                                .with_volume(-3.1)
+                                .handle(),
+                        )),
+                    );
                 }
             } else {
                 flashlight_toggle.0 = FlashlightToggleState::Toggled;

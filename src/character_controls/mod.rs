@@ -9,11 +9,13 @@ use crate::{
     menu::Playing,
     room::Movable,
     sanity::Sanity,
-    win::{CurrentState, GameState},
+    win::{CurrentState, GameState, SoundHandle},
 };
 use bevy::prelude::*;
 use bevy::{platform::collections::HashSet, time::Stopwatch};
-use bevy_kira_audio::SpatialAudioReceiver;
+use bevy_kira_audio::{
+    Audio, AudioControl, AudioInstance, AudioSource, AudioTween, SpatialAudioReceiver,
+};
 use bevy_lit::prelude::*;
 
 pub mod flashlight;
@@ -85,16 +87,17 @@ impl StatusEffects {
     }
 }
 
-fn play_hurt_sound(mut commands: Commands, mut q_player: Query<&mut Character>, hurt: Res<Hurt>) {
+fn play_hurt_sound(
+    mut commands: Commands,
+    audio: Res<Audio>,
+    mut q_player: Query<&mut Character>,
+    hurt: Res<Hurt>,
+) {
     if let Ok(mut player) = q_player.single_mut() {
         if player.is_hurt == true {
             player.is_hurt = false;
-            commands.spawn((
-                AudioPlayer::new(hurt.0.clone()),
-                PlaybackSettings {
-                    volume: bevy::audio::Volume::Linear(0.7),
-                    ..Default::default()
-                },
+            commands.spawn(SoundHandle(
+                audio.play(hurt.0.clone()).with_volume(-3.1).handle(),
             ));
         }
     }
@@ -114,11 +117,13 @@ fn get_speed(status_effects: &StatusEffects) -> f32 {
 }
 
 fn player_movement_input(
+    audio: Res<Audio>,
     mut commands: Commands,
     inputs: Res<ButtonInput<KeyCode>>,
     mut q_player: Query<(&mut Velocity, &StatusEffects, &mut Walking), With<Character>>,
-    q_walk_audio: Query<Entity, With<WalkAudio>>,
+    q_walk_audio: Query<(Entity, &SoundHandle), With<WalkAudio>>,
     walk_sound: Res<Walk>,
+    mut audio_instances: ResMut<Assets<AudioInstance>>,
 ) {
     let (mut char_vel, status_effects, mut walk_state) =
         q_player.single_mut().expect("No Player Object");
@@ -140,16 +145,21 @@ fn player_movement_input(
         walk_state.0 = WalkState::Walking;
         commands.spawn((
             WalkAudio,
-            AudioPlayer::new(walk_sound.0.clone()),
-            PlaybackSettings {
-                volume: bevy::audio::Volume::Linear(0.1),
-                mode: bevy::audio::PlaybackMode::Loop,
-                ..Default::default()
-            },
+            SoundHandle(
+                audio
+                    .play(walk_sound.0.clone())
+                    .with_volume(-20.0)
+                    .looped()
+                    .handle(),
+            ),
         ));
     } else if dir == Vec2::ZERO {
         walk_state.0 = WalkState::Stopped;
-        if let Ok(walk_audio) = q_walk_audio.single() {
+        if let Ok((walk_audio, handle)) = q_walk_audio.single() {
+            audio_instances
+                .get_mut(&handle.0)
+                .unwrap()
+                .stop(AudioTween::default());
             commands.entity(walk_audio).despawn();
         }
     }

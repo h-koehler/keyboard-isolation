@@ -120,7 +120,7 @@ fn play_bg(mut commands: Commands, audio: Res<Audio>, asset_server: Res<AssetSer
     commands.insert_resource(BgSong(
         audio
             .play(asset_server.load("sounds/ambient_noise.ogg"))
-            .with_volume(-10.)
+            .with_volume(-50.)
             .looped()
             .handle(),
     ));
