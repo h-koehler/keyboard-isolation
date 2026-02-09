@@ -18,6 +18,7 @@ pub mod dog;
 pub mod enemies;
 pub mod items;
 pub mod light;
+pub mod menu;
 pub mod room;
 pub mod sanity;
 pub mod ui;
@@ -55,6 +56,7 @@ fn main() {
     animation::register(&mut app);
     assets::register(&mut app);
     collision::register(&mut app);
+    menu::register(&mut app);
 
     app.run();
 }

@@ -4,6 +4,7 @@ use crate::{
     dialog::DialogOnClose,
     items::CollectedItems,
     light::{CheckInLight, IgnoreInLightCheckLight},
+    menu::Playing,
     room::Movable,
     sanity::Sanity,
     win::{CurrentState, GameState},
@@ -251,7 +252,10 @@ pub(super) fn register(app: &mut App) {
     flashlight::register(app);
 
     app.add_systems(Startup, (setup /*load_profiles*/,));
-    app.add_systems(Update, player_movement_input);
+    app.add_systems(
+        Update,
+        player_movement_input.run_if(resource_exists::<Playing>),
+    );
     app.add_systems(
         PostUpdate,
         (apply_velocity, player_rotation_input, camera_follow_player).chain(),
