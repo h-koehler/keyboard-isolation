@@ -4,7 +4,7 @@ use bevy_lit::prelude::PointLight2d;
 use crate::{
     animation::{AnimateSprite, AnimationState},
     assets::{LoadAssetsSet, load_atlas},
-    collision::room_objects::spawn_crash_site_objects,
+    collision::room_objects::{spawn_crash_site_objects, spawn_deadbody_objects, spawn_joe_objects},
     ui::UI_HEIGHT,
 };
 
@@ -98,6 +98,8 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset
     commands.spawn((Transform::from_xyz(200.0, 400.0, 2.0), fire(&fire_asset)));
     commands.spawn((Transform::from_xyz(100.0, -100.0, 2.0), fire(&fire_asset)));
     spawn_crash_site_objects(&mut commands, &asset_server);
+    spawn_deadbody_objects(&mut commands, &asset_server);
+    spawn_joe_objects(&mut commands, &asset_server);
 }
 
 #[derive(Resource)]
