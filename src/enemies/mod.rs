@@ -1,4 +1,6 @@
 use crate::{
+    animation::{AnimateSprite, AnimationState},
+    assets::load_atlas,
     character_controls::{Character, StatusEffect, StatusEffects},
     checkpoint::TimeTilNextPlay,
     light::InLight,
@@ -124,7 +126,17 @@ fn play_enemy_audio(
     }
 }
 
-pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
+#[derive(Resource)]
+pub struct StalkerAsset {
+    image: Handle<Image>,
+    layout: Handle<TextureAtlasLayout>,
+}
+
+pub fn stalker(
+    stalker_asset: &StalkerAsset,
+    asset_server: &AssetServer,
+    meshes: &mut Assets<Mesh>,
+) -> impl Bundle {
     (
         Name::new("Stalker"),
         Movable,
@@ -146,9 +158,14 @@ pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bu
         LightOccluder2d {
             occluder_mask: asset_server.load("stalker.png"),
         },
+        AnimateSprite { fps: 10 },
+        AnimationState::new(rand::random_range(0..13)),
         Sprite {
-            image: asset_server.load("stalker.png"),
-            custom_size: Some(Vec2::splat(45.0)),
+            image: stalker_asset.image.clone(),
+            texture_atlas: Some(TextureAtlas {
+                layout: stalker_asset.layout.clone(),
+                index: 0,
+            }),
             ..Default::default()
         },
         SpatialAudioEmitter { instances: vec![] },
@@ -369,4 +386,11 @@ pub(super) fn register(app: &mut App) {
         )
             .chain(),
     );
+
+    load_atlas::<13, 128>(app, "stalker.png", |world, (texture, layout)| {
+        world.insert_resource(StalkerAsset {
+            image: texture,
+            layout: layout,
+        });
+    });
 }
