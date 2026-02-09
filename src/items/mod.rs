@@ -126,17 +126,17 @@ fn pickup_item(
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         item(&asset_server, Item::Antenna, "Antenna", "antenna.png"),
-        Transform::from_translation(Vec3::new(-200.0, -500.0, 3.0)),
+        Transform::from_translation(Vec3::new(-6000.0, 2550.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Plate, "Plate", "plate.png"),
-        Transform::from_translation(Vec3::new(-100.0, -500.0, 3.0)),
+        Transform::from_translation(Vec3::new(6000.0, 2550.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Chip, "Chip", "chip.png"),
-        Transform::from_translation(Vec3::new(0.0, -500.0, 3.0)),
+        Transform::from_translation(Vec3::new(3500.0, -2850.0, 3.0)),
     ));
 
     commands.spawn((

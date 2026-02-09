@@ -162,11 +162,6 @@ fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
     //     Transform::from_translation(Vec3::new(400.0, 0.0, 0.0)),
     //     checkpoint(&asset_server, "3"),
     // ));
-
-    commands.spawn((
-        Transform::from_translation(Vec3::new(450.0, 200.0, 0.0)),
-        dead_body::<DeadSO>(asset_server, "dead_wife.png"),
-    ));
 }
 
 fn done_checkpoint_on_close(
