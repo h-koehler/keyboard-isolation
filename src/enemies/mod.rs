@@ -1,4 +1,5 @@
 use crate::{
+    anim_clips::ENEMY_CLIPS,
     animation::{AnimateSprite, AnimationState},
     assets::load_atlas,
     character_controls::{Character, StatusEffect, StatusEffects},
@@ -158,8 +159,12 @@ pub fn stalker(
         LightOccluder2d {
             occluder_mask: asset_server.load("stalker.png"),
         },
-        AnimateSprite { fps: 10 },
-        AnimationState::new(rand::random_range(0..13)),
+        AnimateSprite {
+            clips: ENEMY_CLIPS,
+            anim_state: 0,
+            default_fps: 10,
+        },
+        AnimationState::default(),
         Sprite {
             image: stalker_asset.image.clone(),
             texture_atlas: Some(TextureAtlas {
