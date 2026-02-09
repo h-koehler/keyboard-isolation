@@ -1,4 +1,5 @@
 use bevy::{color::palettes::css, prelude::*};
+use bevy_kira_audio::{Audio, AudioControl, AudioInstance};
 
 use crate::assets::{LoadAssetsSet, load_assets};
 
@@ -112,11 +113,24 @@ fn on_enter(
     }
 }
 
+#[derive(Resource)]
+struct BgSong(Handle<AudioInstance>);
+
+fn play_bg(mut commands: Commands, audio: Res<Audio>, asset_server: Res<AssetServer>) {
+    commands.insert_resource(BgSong(
+        audio
+            .play(asset_server.load("sounds/ambient_noise.ogg"))
+            .with_volume(-10.)
+            .looped()
+            .handle(),
+    ));
+}
+
 pub(super) fn register(app: &mut App) {
     load_assets::<Font, 1>(app, ["fonts/default.ttf"], |w, [f]| {
         w.insert_resource(DefaultFont(f));
     });
 
-    app.add_systems(Startup, show_menu.after(LoadAssetsSet))
+    app.add_systems(Startup, (show_menu, play_bg).after(LoadAssetsSet))
         .add_systems(Update, on_enter);
 }

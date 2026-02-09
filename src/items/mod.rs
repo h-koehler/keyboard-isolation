@@ -1,6 +1,10 @@
 use bevy::{platform::collections::HashSet, prelude::*};
 
-use crate::{character_controls::Character, menu::Playing};
+use crate::{
+    character_controls::{Character, StatusEffect, StatusEffects},
+    menu::Playing,
+    sanity::{Sanity, SanityAmplifiers, SanityBlockers},
+};
 
 pub const PICKUP_DIST: f32 = 50.0;
 
@@ -10,6 +14,7 @@ pub enum Item {
     Chip,
     Plate,
     Flower,
+    MedPack,
     Flashlight,
 }
 
@@ -45,13 +50,38 @@ fn item(asset_server: &AssetServer, item: Item, item_name: &str, asset_name: &st
     )
 }
 
+#[derive(Resource)]
+pub struct PickupSound(Handle<AudioSource>);
+
+fn load_pickup_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(PickupSound(asset_server.load("sounds/item_pickup.ogg")));
+}
+
 fn pickup_item(
     mut commands: Commands,
     mut q_item: Query<(&mut Transform, &mut CollectableItem, Entity), With<CollectableItem>>,
-    mut q_player: Query<&Transform, (With<Character>, Without<CollectableItem>)>,
+    mut q_player: Query<
+        (
+            &Transform,
+            &mut Character,
+            &mut Sanity,
+            &SanityAmplifiers,
+            &SanityBlockers,
+            &mut StatusEffects,
+        ),
+        (With<Character>, Without<CollectableItem>),
+    >,
     mut q_collected_items: Query<&mut CollectedItems>,
+    pickup_sound: Res<PickupSound>,
 ) {
-    let player_transform = q_player.single_mut().expect("No Player Object");
+    let (
+        player_transform,
+        mut player_character,
+        mut sanity,
+        sanity_amplifiers,
+        sanity_blockers,
+        mut status_effects,
+    ) = q_player.single_mut().expect("No Player Object");
     let player_translation = player_transform.translation.truncate();
 
     for (item_transform, item, item_ent) in q_item.iter_mut() {
@@ -63,7 +93,30 @@ fn pickup_item(
                 .single_mut()
                 .expect("No Collected Item Object");
             collected_items.collect_item(item.0);
+
+            match item.0 {
+                Item::Flower => sanity.increase_sanity(
+                    50.0,
+                    sanity_amplifiers,
+                    sanity_blockers,
+                    &status_effects,
+                ),
+                Item::MedPack => {
+                    player_character.heal();
+                    status_effects.remove_effect(StatusEffect::Slowed);
+                }
+                _ => {}
+            }
+
             commands.entity(item_ent).despawn();
+
+            commands.spawn((
+                AudioPlayer::new(pickup_sound.0.clone()),
+                PlaybackSettings {
+                    volume: bevy::audio::Volume::Linear(0.3),
+                    ..Default::default()
+                },
+            ));
         }
     }
 }
@@ -71,22 +124,27 @@ fn pickup_item(
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         item(&asset_server, Item::Antenna, "Antenna", "antenna.png"),
-        Transform::from_translation(Vec3::new(-100.0, 100.0, 3.0)),
+        Transform::from_translation(Vec3::new(-200.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Plate, "Plate", "plate.png"),
-        Transform::from_translation(Vec3::new(340.0, -450.0, 3.0)),
+        Transform::from_translation(Vec3::new(-100.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Chip, "Chip", "chip.png"),
-        Transform::from_translation(Vec3::new(1325.0, 505.0, 3.0)),
+        Transform::from_translation(Vec3::new(0.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Flower, "Flower", "flower.png"),
-        Transform::from_translation(Vec3::new(-650.0, -890.0, 3.0)),
+        Transform::from_translation(Vec3::new(100.0, -500.0, 3.0)),
+    ));
+
+    commands.spawn((
+        item(&asset_server, Item::MedPack, "Med Pack", "med_pack.png"),
+        Transform::from_translation(Vec3::new(6000.0, 2500.0, 3.0)),
     ));
 
     commands.spawn((
@@ -96,11 +154,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             "Flashlight",
             "flashlight.png",
         ),
-        Transform::from_translation(Vec3::new(200.0, -350.0, 3.0)),
+        Transform::from_translation(Vec3::new(-20.0, 360.0, 3.0)),
     ));
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
+    app.add_systems(Startup, (setup, load_pickup_sound));
     app.add_systems(Update, pickup_item.run_if(resource_exists::<Playing>));
 }
