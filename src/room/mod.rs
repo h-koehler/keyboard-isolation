@@ -97,53 +97,53 @@ fn setup_room(
 
     // [0,700],[0,200]
     commands.spawn((
-        Transform::from_xyz(0.0, 100.0, 0.0).with_scale(Vec3::splat(5.0)),
+        Transform::from_xyz(0.0, 100.0, 2.0).with_scale(Vec3::splat(5.0)),
         fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(50.0, 11.0, 0.0).with_scale(Vec3::splat(4.0)),
+        Transform::from_xyz(50.0, 11.0, 2.0).with_scale(Vec3::splat(4.0)),
         fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(300.0, 150.0, 0.0).with_scale(Vec3::splat(3.0)),
+        Transform::from_xyz(300.0, 150.0, 2.0).with_scale(Vec3::splat(3.0)),
         fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(350.0, 130.0, 0.0).with_scale(Vec3::splat(2.0)),
+        Transform::from_xyz(350.0, 130.0, 2.0).with_scale(Vec3::splat(2.0)),
         fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(250.0, 140.0, 0.0).with_scale(Vec3::splat(2.0)),
+        Transform::from_xyz(250.0, 140.0, 2.0).with_scale(Vec3::splat(2.0)),
         fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(320.0, 100.0, 0.0).with_scale(Vec3::splat(2.0)),
-        fire(&fire_asset, &audio, &asset_server),
-    ));
-
-    commands.spawn((
-        Transform::from_xyz(700.0, 50.0, 0.0).with_scale(Vec3::splat(4.5)),
-        fire(&fire_asset, &audio, &asset_server),
-    ));
-    commands.spawn((
-        Transform::from_xyz(450.0, 30.0, 0.0).with_scale(Vec3::splat(2.0)),
-        fire(&fire_asset, &audio, &asset_server),
-    ));
-    commands.spawn((
-        Transform::from_xyz(800.0, 138.0, 0.0).with_scale(Vec3::splat(1.0)),
+        Transform::from_xyz(320.0, 100.0, 2.0).with_scale(Vec3::splat(2.0)),
         fire(&fire_asset, &audio, &asset_server),
     ));
 
     commands.spawn((
-        Transform::from_xyz(100.0, 100.0, 0.0),
+        Transform::from_xyz(700.0, 50.0, 2.0).with_scale(Vec3::splat(4.5)),
         fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(200.0, 400.0, 0.0),
+        Transform::from_xyz(450.0, 30.0, 2.0).with_scale(Vec3::splat(2.0)),
         fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(100.0, -100.0, 0.0),
+        Transform::from_xyz(800.0, 138.0, 2.0).with_scale(Vec3::splat(1.0)),
+        fire(&fire_asset, &audio, &asset_server),
+    ));
+
+    commands.spawn((
+        Transform::from_xyz(100.0, 100.0, 2.0),
+        fire(&fire_asset, &audio, &asset_server),
+    ));
+    commands.spawn((
+        Transform::from_xyz(200.0, 400.0, 2.0),
+        fire(&fire_asset, &audio, &asset_server),
+    ));
+    commands.spawn((
+        Transform::from_xyz(100.0, -100.0, 2.0),
         fire(&fire_asset, &audio, &asset_server),
     ));
     spawn_crash_site_objects(&mut commands, &asset_server);

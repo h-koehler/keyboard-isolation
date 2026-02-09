@@ -10,6 +10,7 @@ use crate::{
     checkpoint::TimeTilNextPlay,
     dialog::show_dialog_on_condition,
     items::{CollectedItems, Item},
+    menu::Playing,
 };
 
 pub const INTERACT_DIST: f32 = 400.0;
@@ -170,5 +171,8 @@ fn setup(mut commands: Commands) {
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, (setup, load_win_sound));
-    app.add_systems(Update, (play_audio, play_win_sound, parts_collected, win));
+    app.add_systems(
+        Update,
+        (parts_collected, win).run_if(resource_exists::<Playing>),
+    );
 }
