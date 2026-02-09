@@ -1,9 +1,11 @@
 use bevy::{platform::collections::HashSet, prelude::*};
+use bevy_kira_audio::{Audio, AudioControl, AudioSource};
 
 use crate::{
     character_controls::{Character, StatusEffect, StatusEffects},
     menu::Playing,
     sanity::{Sanity, SanityAmplifiers, SanityBlockers},
+    win::SoundHandle,
 };
 
 pub const PICKUP_DIST: f32 = 50.0;
@@ -73,6 +75,7 @@ fn pickup_item(
     >,
     mut q_collected_items: Query<&mut CollectedItems>,
     pickup_sound: Res<PickupSound>,
+    audio: Res<Audio>,
 ) {
     let (
         player_transform,
@@ -110,13 +113,12 @@ fn pickup_item(
 
             commands.entity(item_ent).despawn();
 
-            commands.spawn((
-                AudioPlayer::new(pickup_sound.0.clone()),
-                PlaybackSettings {
-                    volume: bevy::audio::Volume::Linear(0.3),
-                    ..Default::default()
-                },
-            ));
+            commands.spawn((SoundHandle(
+                audio
+                    .play(pickup_sound.0.clone())
+                    .with_volume(-10.0)
+                    .handle(),
+            ),));
         }
     }
 }

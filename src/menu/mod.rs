@@ -105,12 +105,11 @@ fn on_enter(
     q_menu: Query<Entity, With<Menu>>,
     mut commands: Commands,
 ) {
-    if inputs.just_pressed(KeyCode::Enter) {
-        if let Ok(ent) = q_menu.single() {
+    if inputs.just_pressed(KeyCode::Enter)
+        && let Ok(ent) = q_menu.single() {
             commands.insert_resource(Playing);
             commands.entity(ent).despawn();
         }
-    }
 }
 
 #[derive(Resource)]
@@ -120,7 +119,7 @@ fn play_bg(mut commands: Commands, audio: Res<Audio>, asset_server: Res<AssetSer
     commands.insert_resource(BgSong(
         audio
             .play(asset_server.load("sounds/ambient_noise.ogg"))
-            .with_volume(-10.)
+            .with_volume(-50.)
             .looped()
             .handle(),
     ));

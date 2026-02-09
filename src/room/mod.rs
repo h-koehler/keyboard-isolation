@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_kira_audio::{
-    Audio, AudioControl, AudioEasing, AudioTween, SpatialAudioEmitter, SpatialRadius,
+    Audio, AudioControl, AudioEasing, AudioSource, AudioTween, SpatialAudioEmitter, SpatialRadius,
 };
 use bevy_lit::prelude::PointLight2d;
 
@@ -18,7 +18,7 @@ use crate::{
 pub struct Movable;
 
 #[derive(Resource)]
-pub struct Ambiance(Handle<bevy::audio::AudioSource>);
+pub struct Ambiance(Handle<AudioSource>);
 
 fn load_ambiance(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(Ambiance(asset_server.load("sounds/ambient_noise.ogg")));
@@ -73,7 +73,6 @@ fn setup_room(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     fire_asset: Res<FireAsset>,
-    ambiance: Res<Ambiance>,
     audio: Res<Audio>,
 ) {
     commands.spawn((
@@ -85,14 +84,6 @@ fn setup_room(
         },
         Transform::from_translation(Vec3::new(0.0, UI_HEIGHT / 2.0, -10.0))
             .with_scale(Vec3::splat(2.0)),
-        AudioPlayer::new(ambiance.0.clone()),
-        PlaybackSettings {
-            volume: bevy::audio::Volume::Linear(0.05),
-            mode: bevy::audio::PlaybackMode::Loop,
-            start_position: Some(Duration::from_secs_f32(0.1)),
-            duration: Some(Duration::from_secs_f32(10.5)),
-            ..Default::default()
-        },
     ));
 
     // [0,700],[0,200]
@@ -173,7 +164,7 @@ pub(super) fn register(app: &mut App) {
     load_atlas::<7, 32>(app, "fire.png", |world, (texture, layout)| {
         world.insert_resource(FireAsset {
             image: texture,
-            layout: layout,
+            layout,
         });
     });
 }

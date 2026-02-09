@@ -2,7 +2,8 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_kira_audio::{
-    Audio, AudioControl, AudioEasing, AudioTween, SpatialAudioEmitter, SpatialRadius,
+    Audio, AudioControl, AudioEasing, AudioInstance, AudioSource, AudioTween, SpatialAudioEmitter,
+    SpatialRadius,
 };
 
 use crate::{
@@ -56,8 +57,8 @@ fn play_audio(
     mut q_checkpoint: Query<(&mut TimeTilNextPlay, &mut SpatialAudioEmitter), With<RescuePoint>>,
     audio: Res<Audio>,
 ) {
-    if let Ok(game_state) = q_game_state.single() {
-        if game_state.0 == GameState::Collected {
+    if let Ok(game_state) = q_game_state.single()
+        && game_state.0 == GameState::Collected {
             let delta = time.delta_secs();
             for (mut timer, mut spatial_audio) in q_checkpoint.iter_mut() {
                 timer.0.tick(Duration::from_secs_f32(delta));
@@ -74,7 +75,6 @@ fn play_audio(
                 }
             }
         }
-    }
 }
 
 fn parts_collected(
@@ -95,8 +95,8 @@ fn parts_collected(
         }
     }
 
-    if let Ok(mut game_state) = q_game_state.single_mut() {
-        if num_parts == 3 && game_state.0 == GameState::Collecting {
+    if let Ok(mut game_state) = q_game_state.single_mut()
+        && num_parts == 3 && game_state.0 == GameState::Collecting {
             game_state.0 = GameState::Collected;
             show_dialog_on_condition(
                 commands,
@@ -104,7 +104,6 @@ fn parts_collected(
                 "I think I have all of the parts now! I need to go back to the ship!",
             );
         }
-    }
 }
 
 fn win(
@@ -120,8 +119,8 @@ fn win(
     if let Ok(item_transform) = q_rescue_point.single_mut() {
         let item_translation = item_transform.translation.truncate();
         let difference = player_translation - item_translation;
-        if let Ok(mut game_state) = q_game_state.single_mut() {
-            if difference.length() <= INTERACT_DIST && game_state.0 == GameState::Collected {
+        if let Ok(mut game_state) = q_game_state.single_mut()
+            && difference.length() <= INTERACT_DIST && game_state.0 == GameState::Collected {
                 game_state.0 = GameState::Finished;
                 show_dialog_on_condition(
                     commands,
@@ -129,7 +128,6 @@ fn win(
                     "There's the signal! Hopefully someone receives it soon...",
                 );
             }
-        }
     }
 }
 
@@ -140,26 +138,23 @@ fn load_win_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(SignalSend(asset_server.load("sounds/scifi alarm.ogg")));
 }
 
+#[derive(Component)]
+pub struct SoundHandle(pub Handle<AudioInstance>);
+
 fn play_win_sound(
     mut commands: Commands,
     mut q_signal_sent: Query<&mut SignalSent>,
     q_game_state: Query<&CurrentState>,
     win_sound: Res<SignalSend>,
+    audio: Res<Audio>,
 ) {
     if let Ok(mut signal_sent) = q_signal_sent.single_mut()
         && let Ok(game_state) = q_game_state.single()
-    {
-        if signal_sent.0 == SignalStatus::NotSent && game_state.0 == GameState::Finished {
+        && signal_sent.0 == SignalStatus::NotSent && game_state.0 == GameState::Finished {
             signal_sent.0 = SignalStatus::Sent;
-            commands.spawn((
-                AudioPlayer::new(win_sound.0.clone()),
-                PlaybackSettings {
-                    volume: bevy::audio::Volume::Linear(0.7),
-                    ..Default::default()
-                },
-            ));
+            commands
+                .spawn(SoundHandle(audio.play(win_sound.0.clone()).with_volume(-3.0).handle()) );
         }
-    }
 }
 
 fn setup(mut commands: Commands) {

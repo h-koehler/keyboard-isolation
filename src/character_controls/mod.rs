@@ -1,7 +1,8 @@
 use crate::{
+    anim_clips::PLAYER_CLIPS,
     animation::AnimateSprite,
     animation::AnimationState,
-    anim_clips::PLAYER_CLIPS,
+    assets::{LoadAssetsSet, load_atlas},
     character_controls::flashlight::{
         Flashlight, FlashlightState, FlashlightToggle, FlashlightToggleState,
     },
@@ -11,13 +12,14 @@ use crate::{
     light::{CheckInLight, IgnoreInLightCheckLight},
     menu::Playing,
     room::Movable,
-    assets::{LoadAssetsSet, load_atlas},
     sanity::Sanity,
-    win::{CurrentState, GameState},
+    win::{CurrentState, GameState, SoundHandle},
 };
 use bevy::prelude::*;
 use bevy::{platform::collections::HashSet, time::Stopwatch};
-use bevy_kira_audio::SpatialAudioReceiver;
+use bevy_kira_audio::{
+    Audio, AudioControl, AudioInstance, AudioSource, AudioTween, SpatialAudioReceiver,
+};
 use bevy_lit::prelude::*;
 
 pub mod flashlight;
@@ -90,18 +92,19 @@ impl StatusEffects {
     }
 }
 
-fn play_hurt_sound(mut commands: Commands, mut q_player: Query<&mut Character>, hurt: Res<Hurt>) {
-    if let Ok(mut player) = q_player.single_mut() {
-        if player.is_hurt == true {
-            player.is_hurt = false;
-            commands.spawn((
-                AudioPlayer::new(hurt.0.clone()),
-                PlaybackSettings {
-                    volume: bevy::audio::Volume::Linear(0.7),
-                    ..Default::default()
-                },
-            ));
-        }
+fn play_hurt_sound(
+    mut commands: Commands,
+    audio: Res<Audio>,
+    mut q_player: Query<&mut Character>,
+    hurt: Res<Hurt>,
+) {
+    if let Ok(mut player) = q_player.single_mut()
+        && player.is_hurt
+    {
+        player.is_hurt = false;
+        commands.spawn(SoundHandle(
+            audio.play(hurt.0.clone()).with_volume(-3.1).handle(),
+        ));
     }
 }
 
@@ -119,18 +122,37 @@ fn get_speed(status_effects: &StatusEffects) -> f32 {
 }
 
 fn player_movement_input(
+    audio: Res<Audio>,
     mut commands: Commands,
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Velocity, &mut AnimationState, &StatusEffects, &mut Walking), With<Character>>,
-    q_walk_audio: Query<Entity, With<WalkAudio>>,
+    mut q_player: Query<
+        (
+            &mut Velocity,
+            &mut AnimationState,
+            &StatusEffects,
+            &mut Walking,
+        ),
+        With<Character>,
+    >,
+    q_walk_audio: Query<(Entity, &SoundHandle), With<WalkAudio>>,
     walk_sound: Res<Walk>,
+    mut audio_instances: ResMut<Assets<AudioInstance>>,
 ) {
-    let (mut vel, mut anim,status_effects, mut walk_state) = q_player.single_mut().expect("No Player Object");
+    let (mut vel, mut anim, status_effects, mut walk_state) =
+        q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
-    if inputs.pressed(KeyCode::KeyA) { dir.x -= 1.0; }
-    if inputs.pressed(KeyCode::KeyD) { dir.x += 1.0; }
-    if inputs.pressed(KeyCode::KeyW) { dir.y += 1.0; }
-    if inputs.pressed(KeyCode::KeyS) { dir.y -= 1.0; }
+    if inputs.pressed(KeyCode::KeyA) {
+        dir.x -= 1.0;
+    }
+    if inputs.pressed(KeyCode::KeyD) {
+        dir.x += 1.0;
+    }
+    if inputs.pressed(KeyCode::KeyW) {
+        dir.y += 1.0;
+    }
+    if inputs.pressed(KeyCode::KeyS) {
+        dir.y -= 1.0;
+    }
 
     // 0 = idle/pause, 1 = walk (example mapping)
     if dir == Vec2::ZERO {
@@ -143,16 +165,21 @@ fn player_movement_input(
         walk_state.0 = WalkState::Walking;
         commands.spawn((
             WalkAudio,
-            AudioPlayer::new(walk_sound.0.clone()),
-            PlaybackSettings {
-                volume: bevy::audio::Volume::Linear(0.1),
-                mode: bevy::audio::PlaybackMode::Loop,
-                ..Default::default()
-            },
+            SoundHandle(
+                audio
+                    .play(walk_sound.0.clone())
+                    .with_volume(-20.0)
+                    .looped()
+                    .handle(),
+            ),
         ));
     } else if dir == Vec2::ZERO {
         walk_state.0 = WalkState::Stopped;
-        if let Ok(walk_audio) = q_walk_audio.single() {
+        if let Ok((walk_audio, handle)) = q_walk_audio.single() {
+            audio_instances
+                .get_mut(&handle.0)
+                .unwrap()
+                .stop(AudioTween::default());
             commands.entity(walk_audio).despawn();
         }
     }
@@ -228,10 +255,10 @@ fn player_rotation_input(
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: Res<PlayerAsset>) {
+fn setup(mut commands: Commands, player_asset: Res<PlayerAsset>) {
     commands
         .spawn((
-            Camera2d::default(),
+            Camera2d,
             Lighting2dSettings {
                 penetration: PenetrationSettings {
                     max: 30.0,
@@ -251,7 +278,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: R
 
     commands
         .spawn((
-            AnimateSprite { default_fps: 10, anim_state: 0, clips: PLAYER_CLIPS },
+            AnimateSprite {
+                default_fps: 10,
+                anim_state: 0,
+                clips: PLAYER_CLIPS,
+            },
             Name::new("Character"),
             DialogOnClose("It's amazing I survived the crash...".into()),
             Character {
@@ -335,7 +366,7 @@ pub(super) fn register(app: &mut App) {
     app.add_systems(
         Startup,
         (
-            setup.after(LoadAssetsSet/*load_profiles*/), /*load_profiles*/
+            setup.after(LoadAssetsSet /*load_profiles*/), /*load_profiles*/
             load_walk_sound,
             load_hurt_sound,
         ),

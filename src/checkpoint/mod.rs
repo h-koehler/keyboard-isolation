@@ -8,6 +8,7 @@ use crate::{
     character_controls::{Character, flashlight::Flashlight},
     dialog::{Dialog, DialogOnClose},
     sanity::body::{DeadSO, dead_body},
+    win::SoundHandle,
 };
 
 pub const CHECKPOINT_DURATION: f32 = 5.0;
@@ -26,7 +27,7 @@ pub struct CheckpointBlinking(f32);
 pub struct TimeTilNextPlay(pub Timer);
 
 #[derive(Resource)]
-pub struct GetCheckpoint(Handle<bevy::audio::AudioSource>);
+pub struct GetCheckpoint(Handle<AudioSource>);
 
 fn load_get_checkpoint_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(GetCheckpoint(asset_server.load("sounds/achievement.ogg")));
@@ -169,6 +170,7 @@ fn spawn_checkpoint(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 fn done_checkpoint_on_close(
+    audio: Res<Audio>,
     mut commands: Commands,
     q_player: Query<&Transform, With<Character>>,
     q_close: Query<(&Transform, Entity), With<CheckpointBlinking>>,
@@ -186,13 +188,14 @@ fn done_checkpoint_on_close(
             .entity(ent)
             .remove::<CheckpointBlinking>()
             .insert(CheckpointDone);
-        commands.spawn((
-            AudioPlayer::new(get_checkpoint_sound.0.clone()),
-            PlaybackSettings {
-                volume: bevy::audio::Volume::Linear(0.5),
-                ..Default::default()
-            },
-        ));
+        commands.spawn(
+            SoundHandle(
+                audio
+                    .play(get_checkpoint_sound.0.clone())
+                    .with_volume(-6.0)
+                    .handle(),
+            ) ,
+        );
     }
 }
 
