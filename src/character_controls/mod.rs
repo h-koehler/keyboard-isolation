@@ -118,6 +118,8 @@ pub(crate) fn apply_velocity(
     for (mut trans, vel) in q_player.iter_mut() {
         trans.translation.x += vel.linear_velocity.x * dt;
         trans.translation.y += vel.linear_velocity.y * dt;
+        trans.translation.x = trans.translation.x.clamp(-7500.0, 7500.0);
+        trans.translation.y = trans.translation.y.clamp(-3500.0, 3500.0);
     }
 }
 
