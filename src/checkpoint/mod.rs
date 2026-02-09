@@ -46,7 +46,7 @@ fn on_add_checkpoint(mut commands: Commands, q_check: Query<Entity, Added<Checkp
             },
             CheckpointBlinking(0.0),
             SpatialAudioEmitter { instances: vec![] },
-            SpatialRadius { radius: 500.0 },
+            SpatialRadius { radius: 7500.0 },
             TimeTilNextPlay(Timer::from_seconds(
                 CHECKPOINT_DURATION,
                 TimerMode::Repeating,
@@ -183,14 +183,12 @@ fn done_checkpoint_on_close(
             .entity(ent)
             .remove::<CheckpointBlinking>()
             .insert(CheckpointDone);
-        commands.spawn(
-            SoundHandle(
-                audio
-                    .play(get_checkpoint_sound.0.clone())
-                    .with_volume(-6.0)
-                    .handle(),
-            ) ,
-        );
+        commands.spawn(SoundHandle(
+            audio
+                .play(get_checkpoint_sound.0.clone())
+                .with_volume(-6.0)
+                .handle(),
+        ));
     }
 }
 

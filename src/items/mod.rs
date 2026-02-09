@@ -141,7 +141,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn((
         item(&asset_server, Item::Flower, "Flower", "flower.png"),
-        Transform::from_translation(Vec3::new(100.0, -500.0, 3.0)),
+        Transform::from_translation(Vec3::new(3660.0, -2920.0, 3.0)),
     ));
 
     commands.spawn((
