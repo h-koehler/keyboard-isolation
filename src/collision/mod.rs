@@ -46,9 +46,7 @@ pub struct WorldObject {
 pub enum ObjectType {
     Foliage,
     CrashedShip,
-    Rock,
-    Crystal,
-    Debris,
+    Body
 }
 
 /// Bundle for spawning world objects with collision
@@ -68,9 +66,6 @@ impl WorldObjectBundle {
         size: Vec2,
         texture: Handle<Image>,
     ) -> Self {
-        let mut pos = position;
-        pos.z = -4.0;
-
         Self {
             world_object: WorldObject { object_type },
             collider: Collider::new(size.x, size.y),
@@ -79,7 +74,7 @@ impl WorldObjectBundle {
                 custom_size: Some(size),
                 ..default()
             },
-            transform: Transform::from_translation(pos),
+            transform: Transform::from_translation(position),
         }
     }
 

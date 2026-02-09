@@ -4,7 +4,7 @@ use rand::Rng;
 
 use crate::{
     character_controls::SpawnEnemies,
-    enemies::{Enemy, alien, stalker, teleporting_alien},
+    enemies::{Enemy, StalkerAsset, alien, stalker, teleporting_alien},
     sanity::Sanity,
 };
 
@@ -104,6 +104,7 @@ fn finish_enemies_spawned_in_darkness(
     q_enemies: Query<Entity, (With<Enemy>, Without<Sprite>, Without<InLight>)>,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
+    stalker_asset: Res<StalkerAsset>,
     mut commands: Commands,
 ) {
     let mut rng = rand::rng();
@@ -120,7 +121,7 @@ fn finish_enemies_spawned_in_darkness(
         } else {
             commands
                 .entity(enemy)
-                .insert(stalker(&asset_server, &mut meshes));
+                .insert(stalker(&stalker_asset, &asset_server, &mut meshes));
         }
     }
 }
