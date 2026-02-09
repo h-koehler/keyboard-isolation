@@ -127,7 +127,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands.spawn((
         item(&asset_server, Item::MedPack, "Med Pack", "med_pack.png"),
-        Transform::from_translation(Vec3::new(-600.0, -900.0, 3.0)),
+        Transform::from_translation(Vec3::new(6000.0, 2500.0, 3.0)),
     ));
 
     commands.spawn((
@@ -137,7 +137,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             "Flashlight",
             "flashlight.png",
         ),
-        Transform::from_translation(Vec3::new(200.0, -350.0, 3.0)),
+        Transform::from_translation(Vec3::new(-20.0, 360.0, 3.0)),
     ));
 }
 
