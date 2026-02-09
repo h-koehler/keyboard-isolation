@@ -2,6 +2,7 @@ use bevy::{platform::collections::HashSet, prelude::*};
 
 use crate::{
     character_controls::{Character, StatusEffect, StatusEffects},
+    menu::Playing,
     sanity::{Sanity, SanityAmplifiers, SanityBlockers},
 };
 
@@ -143,5 +144,5 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, setup);
-    app.add_systems(Update, pickup_item);
+    app.add_systems(Update, pickup_item.run_if(resource_exists::<Playing>));
 }
