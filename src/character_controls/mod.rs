@@ -308,6 +308,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: R
                     outer_angle: 25.0,
                     ..default()
                 },
+                Transform::from_rotation(Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2)),
                 FlashlightToggle(FlashlightToggleState::Toggled),
             ));
         });
