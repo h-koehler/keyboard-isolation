@@ -173,6 +173,10 @@ pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, (setup, load_win_sound));
     app.add_systems(
         Update,
-        (parts_collected, win).run_if(resource_exists::<Playing>),
+        (
+            (parts_collected, win).run_if(resource_exists::<Playing>),
+            play_win_sound,
+            play_audio,
+        ),
     );
 }
