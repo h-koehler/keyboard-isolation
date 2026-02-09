@@ -58,23 +58,24 @@ fn play_audio(
     audio: Res<Audio>,
 ) {
     if let Ok(game_state) = q_game_state.single()
-        && game_state.0 == GameState::Collected {
-            let delta = time.delta_secs();
-            for (mut timer, mut spatial_audio) in q_checkpoint.iter_mut() {
-                timer.0.tick(Duration::from_secs_f32(delta));
-                if timer.0.just_finished() {
-                    let ship_audio = audio
-                        .play(asset_server.load("sounds/morse_SOS.ogg"))
-                        .with_volume(-10.)
-                        .fade_in(AudioTween::new(
-                            Duration::from_millis(50),
-                            AudioEasing::OutPowi(2),
-                        ))
-                        .handle();
-                    spatial_audio.instances.push(ship_audio);
-                }
+        && game_state.0 == GameState::Collected
+    {
+        let delta = time.delta_secs();
+        for (mut timer, mut spatial_audio) in q_checkpoint.iter_mut() {
+            timer.0.tick(Duration::from_secs_f32(delta));
+            if timer.0.just_finished() {
+                let ship_audio = audio
+                    .play(asset_server.load("sounds/morse_SOS.ogg"))
+                    .with_volume(-10.)
+                    .fade_in(AudioTween::new(
+                        Duration::from_millis(50),
+                        AudioEasing::OutPowi(2),
+                    ))
+                    .handle();
+                spatial_audio.instances.push(ship_audio);
             }
         }
+    }
 }
 
 fn parts_collected(
@@ -96,14 +97,16 @@ fn parts_collected(
     }
 
     if let Ok(mut game_state) = q_game_state.single_mut()
-        && num_parts == 3 && game_state.0 == GameState::Collecting {
-            game_state.0 = GameState::Collected;
-            show_dialog_on_condition(
-                commands,
-                asset_server,
-                "I think I have all of the parts now! I need to go back to the ship!",
-            );
-        }
+        && num_parts == 3
+        && game_state.0 == GameState::Collecting
+    {
+        game_state.0 = GameState::Collected;
+        show_dialog_on_condition(
+            commands,
+            asset_server,
+            "I think I have all of the parts now! I need to go back to the ship!",
+        );
+    }
 }
 
 fn win(
@@ -120,14 +123,16 @@ fn win(
         let item_translation = item_transform.translation.truncate();
         let difference = player_translation - item_translation;
         if let Ok(mut game_state) = q_game_state.single_mut()
-            && difference.length() <= INTERACT_DIST && game_state.0 == GameState::Collected {
-                game_state.0 = GameState::Finished;
-                show_dialog_on_condition(
-                    commands,
-                    asset_server,
-                    "There's the signal! Hopefully someone receives it soon...",
-                );
-            }
+            && difference.length() <= INTERACT_DIST
+            && game_state.0 == GameState::Collected
+        {
+            game_state.0 = GameState::Finished;
+            show_dialog_on_condition(
+                commands,
+                asset_server,
+                "There's the signal! Hopefully someone receives it soon... (YOU WIN!)",
+            );
+        }
     }
 }
 
@@ -150,11 +155,14 @@ fn play_win_sound(
 ) {
     if let Ok(mut signal_sent) = q_signal_sent.single_mut()
         && let Ok(game_state) = q_game_state.single()
-        && signal_sent.0 == SignalStatus::NotSent && game_state.0 == GameState::Finished {
-            signal_sent.0 = SignalStatus::Sent;
-            commands
-                .spawn(SoundHandle(audio.play(win_sound.0.clone()).with_volume(-3.0).handle()) );
-        }
+        && signal_sent.0 == SignalStatus::NotSent
+        && game_state.0 == GameState::Finished
+    {
+        signal_sent.0 = SignalStatus::Sent;
+        commands.spawn(SoundHandle(
+            audio.play(win_sound.0.clone()).with_volume(-3.0).handle(),
+        ));
+    }
 }
 
 fn setup(mut commands: Commands) {

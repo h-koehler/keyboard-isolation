@@ -8,6 +8,7 @@ use crate::{
     ui::UI_HEIGHT,
 };
 
+pub mod anim_clips;
 pub mod animation;
 pub mod assets;
 pub mod character_controls;
@@ -23,7 +24,6 @@ pub mod room;
 pub mod sanity;
 pub mod ui;
 pub mod win;
-pub mod anim_clips;
 
 fn main() {
     let mut app = App::new();
@@ -42,7 +42,8 @@ fn main() {
         SpatialAudioPlugin,
     ))
     .add_plugins(EguiPlugin::default())
-    .add_plugins(WorldInspectorPlugin::default());
+    // .add_plugins(WorldInspectorPlugin::default());
+    ;
     character_controls::register(&mut app);
     room::register(&mut app);
     ui::register(&mut app);
