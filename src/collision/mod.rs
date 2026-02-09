@@ -46,7 +46,7 @@ pub struct WorldObject {
 pub enum ObjectType {
     Foliage,
     CrashedShip,
-    Body
+    Body,
 }
 
 /// Bundle for spawning world objects with collision
@@ -190,35 +190,39 @@ pub fn spawn_objects_from_data(
         if let (Some(collision_size), Some(collision_offset)) =
             (placement.collision_size, placement.collision_offset)
         {
-            commands.spawn(WorldObjectBundle::with_collision_offset(
-                placement.object_type,
-                position,
-                placement.size,
-                collision_size,
-                collision_offset,
-                texture,
+            commands.spawn((
+                Name::new(placement.sprite_path.to_owned()),
+                WorldObjectBundle::with_collision_offset(
+                    placement.object_type,
+                    position,
+                    placement.size,
+                    collision_size,
+                    collision_offset,
+                    texture,
+                ),
             ));
         } else if let Some(collision_size) = placement.collision_size {
             // Different collision size but no offset
-            commands.spawn(WorldObjectBundle {
-                world_object: WorldObject {
-                    object_type: placement.object_type,
+            commands.spawn((
+                Name::new(placement.sprite_path.to_owned()),
+                WorldObjectBundle {
+                    world_object: WorldObject {
+                        object_type: placement.object_type,
+                    },
+                    collider: Collider::new(collision_size.x, collision_size.y),
+                    sprite: Sprite {
+                        image: texture,
+                        custom_size: Some(placement.size),
+                        ..default()
+                    },
+                    transform: Transform::from_translation(position),
                 },
-                collider: Collider::new(collision_size.x, collision_size.y),
-                sprite: Sprite {
-                    image: texture,
-                    custom_size: Some(placement.size),
-                    ..default()
-                },
-                transform: Transform::from_translation(position),
-            });
+            ));
         } else {
             // Standard placement (collision matches sprite)
-            commands.spawn(WorldObjectBundle::new(
-                placement.object_type,
-                position,
-                placement.size,
-                texture,
+            commands.spawn((
+                Name::new(placement.sprite_path.to_owned()),
+                WorldObjectBundle::new(placement.object_type, position, placement.size, texture),
             ));
         }
     }
