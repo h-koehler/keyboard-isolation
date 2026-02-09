@@ -2,6 +2,7 @@ use bevy::{platform::collections::HashSet, prelude::*};
 
 use crate::{
     character_controls::{Character, StatusEffect, StatusEffects},
+    menu::Playing,
     sanity::{Sanity, SanityAmplifiers, SanityBlockers},
 };
 
@@ -49,6 +50,13 @@ fn item(asset_server: &AssetServer, item: Item, item_name: &str, asset_name: &st
     )
 }
 
+#[derive(Resource)]
+pub struct PickupSound(Handle<AudioSource>);
+
+fn load_pickup_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(PickupSound(asset_server.load("sounds/item_pickup.ogg")));
+}
+
 fn pickup_item(
     mut commands: Commands,
     mut q_item: Query<(&mut Transform, &mut CollectableItem, Entity), With<CollectableItem>>,
@@ -64,6 +72,7 @@ fn pickup_item(
         (With<Character>, Without<CollectableItem>),
     >,
     mut q_collected_items: Query<&mut CollectedItems>,
+    pickup_sound: Res<PickupSound>,
 ) {
     let (
         player_transform,
@@ -100,6 +109,14 @@ fn pickup_item(
             }
 
             commands.entity(item_ent).despawn();
+
+            commands.spawn((
+                AudioPlayer::new(pickup_sound.0.clone()),
+                PlaybackSettings {
+                    volume: bevy::audio::Volume::Linear(0.3),
+                    ..Default::default()
+                },
+            ));
         }
     }
 }
@@ -107,22 +124,22 @@ fn pickup_item(
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         item(&asset_server, Item::Antenna, "Antenna", "antenna.png"),
-        Transform::from_translation(Vec3::new(-100.0, 100.0, 3.0)),
+        Transform::from_translation(Vec3::new(-200.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Plate, "Plate", "plate.png"),
-        Transform::from_translation(Vec3::new(340.0, -450.0, 3.0)),
+        Transform::from_translation(Vec3::new(-100.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Chip, "Chip", "chip.png"),
-        Transform::from_translation(Vec3::new(1325.0, 505.0, 3.0)),
+        Transform::from_translation(Vec3::new(0.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
         item(&asset_server, Item::Flower, "Flower", "flower.png"),
-        Transform::from_translation(Vec3::new(-650.0, -890.0, 3.0)),
+        Transform::from_translation(Vec3::new(100.0, -500.0, 3.0)),
     ));
 
     commands.spawn((
@@ -142,6 +159,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
-    app.add_systems(Update, pickup_item);
+    app.add_systems(Startup, (setup, load_pickup_sound));
+    app.add_systems(Update, pickup_item.run_if(resource_exists::<Playing>));
 }

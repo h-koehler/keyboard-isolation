@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     character_controls::{Character, STARTING_HEALTH, StatusEffect, StatusEffects},
     dialog::DialogOnClose,
+    items::{CollectedItems, Item},
 };
 
 pub const UI_HEIGHT: f32 = 200.0;
@@ -17,6 +18,9 @@ pub struct Dead;
 
 #[derive(Component)]
 pub struct StatusUI;
+
+#[derive(Component)]
+pub struct ItemsUI;
 
 fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
@@ -36,7 +40,7 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             p.spawn((
                 Name::new("Health Text"),
                 Node {
-                    margin: UiRect::horizontal(Val::Px(5.0)),
+                    margin: UiRect::left(Val::Px(40.0)),
                     ..Default::default()
                 },
             ))
@@ -69,7 +73,7 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             p.spawn((
                 Name::new("Status Effect Text"),
                 Node {
-                    margin: UiRect::horizontal(Val::Px(5.0)),
+                    margin: UiRect::left(Val::Px(125.0)),
                     ..Default::default()
                 },
             ))
@@ -86,16 +90,24 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 Name::new("Status Effects"),
                 StatusUI,
                 Node {
-                    // top: Val::Px(10.0),
-                    // right: Val::Px(100.0),
                     margin: UiRect::horizontal(Val::Px(5.0)),
-                    width: Val::Px(256.0),
+                    width: Val::Px(150.0),
+                    height: Val::Px(32.0),
+                    ..Default::default()
+                },
+            ));
+            p.spawn((
+                Name::new("Beacon Components"),
+                ItemsUI,
+                Node {
+                    margin: UiRect::left(Val::Px(125.0)),
+                    width: Val::Px(350.0),
                     height: Val::Px(32.0),
                     ..Default::default()
                 },
             ))
             .with_child((
-                Text::new("None"),
+                Text::new("BEACON COMPONENTS: 0 OF 3"),
                 TextFont {
                     font: asset_server.load("fonts/default.ttf"),
                     font_size: 33.0,
@@ -111,8 +123,10 @@ fn update_ui(
     asset_server: Res<AssetServer>,
     q_player: Query<(Entity, &Character, Has<Dead>)>,
     q_status_effects: Query<&StatusEffects>,
+    q_collected_items: Query<&CollectedItems>,
     q_health_ui: Query<Entity, With<HealthUI>>,
     q_status_ui: Query<Entity, With<StatusUI>>,
+    q_items_ui: Query<Entity, With<ItemsUI>>,
 ) {
     if let Ok((player_entity, player_character, is_dead)) = q_player.single() {
         if player_character.health == 0 && !is_dead {
@@ -144,7 +158,6 @@ fn update_ui(
             if let Ok(status_ui) = q_status_ui.single() {
                 commands.entity(status_ui).despawn_children();
                 commands.entity(status_ui).with_children(|p| {
-                    // let mut offset = 0.0;
                     for status_icon in status_icons {
                         p.spawn((
                             ImageNode {
@@ -158,9 +171,30 @@ fn update_ui(
                                 ..Default::default()
                             },
                         ));
-                        // offset += 10.0;
                     }
                 });
+            }
+        }
+
+        if let Ok(collected_items) = q_collected_items.single() {
+            let count: u32 = collected_items
+                .iter()
+                .map(|item| match item {
+                    Item::Antenna | Item::Chip | Item::Plate => 1,
+                    _ => 0,
+                })
+                .sum();
+            if let Ok(items_ui) = q_items_ui.single() {
+                commands.entity(items_ui).despawn_children();
+                commands.entity(items_ui).with_child((
+                    Text::new(format!("BEACON COMPONENTS: {} OF 3", count)),
+                    TextFont {
+                        font: asset_server.load("fonts/default.ttf"),
+                        font_size: 33.0,
+                        ..default()
+                    },
+                    TextColor(Color::WHITE),
+                ));
             }
         }
     }

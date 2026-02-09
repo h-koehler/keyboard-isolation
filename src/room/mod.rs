@@ -1,4 +1,9 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
+use bevy_kira_audio::{
+    Audio, AudioControl, AudioEasing, AudioTween, SpatialAudioEmitter, SpatialRadius,
+};
 use bevy_lit::prelude::PointLight2d;
 
 use crate::{
@@ -11,13 +16,30 @@ use crate::{
 #[derive(Component)]
 pub struct Movable;
 
+#[derive(Resource)]
+pub struct Ambiance(Handle<bevy::audio::AudioSource>);
+
+fn load_ambiance(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Ambiance(asset_server.load("sounds/ambient_noise.ogg")));
+}
+
 #[derive(Component)]
 struct FireOffset(f32);
 
 pub const ROOM_HEIGHT: u32 = 700;
 pub const ROOM_WIDTH: u32 = 1100;
 
-fn fire(fire_asset: &FireAsset) -> impl Bundle {
+fn fire(fire_asset: &FireAsset, audio: &Audio, asset_server: &AssetServer) -> impl Bundle {
+    let fire_sound = audio
+        .play(asset_server.load("sounds/fire.ogg"))
+        .with_volume(-10.0)
+        .fade_in(AudioTween::new(
+            Duration::from_millis(50),
+            AudioEasing::OutPowi(2),
+        ))
+        .loop_from(0.5)
+        .loop_until(1.0)
+        .handle();
     (
         AnimateSprite { fps: 10 },
         AnimationState::new(rand::random_range(0..7)),
@@ -40,10 +62,20 @@ fn fire(fire_asset: &FireAsset) -> impl Bundle {
             }),
             ..Default::default()
         },
+        SpatialAudioEmitter {
+            instances: vec![fire_sound],
+        },
+        SpatialRadius { radius: 500.0 },
     )
 }
 
-fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset: Res<FireAsset>) {
+fn setup_room(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    fire_asset: Res<FireAsset>,
+    ambiance: Res<Ambiance>,
+    audio: Res<Audio>,
+) {
     commands.spawn((
         Name::new("Background"),
         Sprite {
@@ -53,50 +85,67 @@ fn setup_room(mut commands: Commands, asset_server: Res<AssetServer>, fire_asset
         },
         Transform::from_translation(Vec3::new(0.0, UI_HEIGHT / 2.0, -10.0))
             .with_scale(Vec3::splat(2.0)),
+        AudioPlayer::new(ambiance.0.clone()),
+        PlaybackSettings {
+            volume: bevy::audio::Volume::Linear(0.05),
+            mode: bevy::audio::PlaybackMode::Loop,
+            start_position: Some(Duration::from_secs_f32(0.1)),
+            duration: Some(Duration::from_secs_f32(10.5)),
+            ..Default::default()
+        },
     ));
 
     // [0,700],[0,200]
     commands.spawn((
-        Transform::from_xyz(0.0, 100.0, 0.0).with_scale(Vec3::splat(5.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(0.0, 100.0, 2.0).with_scale(Vec3::splat(5.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(50.0, 11.0, 0.0).with_scale(Vec3::splat(4.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(50.0, 11.0, 2.0).with_scale(Vec3::splat(4.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(300.0, 150.0, 0.0).with_scale(Vec3::splat(3.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(300.0, 150.0, 2.0).with_scale(Vec3::splat(3.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(350.0, 130.0, 0.0).with_scale(Vec3::splat(2.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(350.0, 130.0, 2.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(250.0, 140.0, 0.0).with_scale(Vec3::splat(2.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(250.0, 140.0, 2.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(320.0, 100.0, 0.0).with_scale(Vec3::splat(2.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(320.0, 100.0, 2.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
 
     commands.spawn((
-        Transform::from_xyz(700.0, 50.0, 0.0).with_scale(Vec3::splat(4.5)),
-        fire(&fire_asset),
+        Transform::from_xyz(700.0, 50.0, 2.0).with_scale(Vec3::splat(4.5)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(450.0, 30.0, 0.0).with_scale(Vec3::splat(2.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(450.0, 30.0, 2.0).with_scale(Vec3::splat(2.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
     commands.spawn((
-        Transform::from_xyz(800.0, 138.0, 0.0).with_scale(Vec3::splat(1.0)),
-        fire(&fire_asset),
+        Transform::from_xyz(800.0, 138.0, 2.0).with_scale(Vec3::splat(1.0)),
+        fire(&fire_asset, &audio, &asset_server),
     ));
 
-    commands.spawn((Transform::from_xyz(100.0, 100.0, 0.0), fire(&fire_asset)));
-    commands.spawn((Transform::from_xyz(200.0, 400.0, 0.0), fire(&fire_asset)));
-    commands.spawn((Transform::from_xyz(100.0, -100.0, 0.0), fire(&fire_asset)));
+    commands.spawn((
+        Transform::from_xyz(100.0, 100.0, 2.0),
+        fire(&fire_asset, &audio, &asset_server),
+    ));
+    commands.spawn((
+        Transform::from_xyz(200.0, 400.0, 2.0),
+        fire(&fire_asset, &audio, &asset_server),
+    ));
+    commands.spawn((
+        Transform::from_xyz(100.0, -100.0, 2.0),
+        fire(&fire_asset, &audio, &asset_server),
+    ));
     spawn_crash_site_objects(&mut commands, &asset_server);
 }
 
@@ -113,8 +162,11 @@ fn flicker_fire(time: Res<Time>, mut q_fire: Query<(&FireOffset, &mut PointLight
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup_room.after(LoadAssetsSet))
-        .add_systems(Update, flicker_fire);
+    app.add_systems(
+        Startup,
+        (load_ambiance, setup_room.after(LoadAssetsSet)).chain(),
+    )
+    .add_systems(Update, flicker_fire);
 
     load_atlas::<7, 32>(app, "fire.png", |world, (texture, layout)| {
         world.insert_resource(FireAsset {

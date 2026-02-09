@@ -23,7 +23,6 @@ pub mod room;
 pub mod sanity;
 pub mod ui;
 pub mod win;
-pub mod y_sort;
 
 fn main() {
     let mut app = App::new();
