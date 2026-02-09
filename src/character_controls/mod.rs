@@ -1,5 +1,7 @@
 use crate::{
-    character_controls::flashlight::{Flashlight, FlashlightState},
+    character_controls::flashlight::{
+        Flashlight, FlashlightState, FlashlightToggle, FlashlightToggleState,
+    },
     collision::Collider,
     dialog::DialogOnClose,
     items::CollectedItems,
@@ -298,6 +300,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     outer_angle: 25.0,
                     ..default()
                 },
+                FlashlightToggle(FlashlightToggleState::Toggled),
             ));
         });
 }

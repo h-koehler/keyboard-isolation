@@ -1,19 +1,9 @@
 use crate::{
-    character_controls::{Character, Hurt, StatusEffect, StatusEffects},
+    character_controls::{Character, StatusEffect, StatusEffects},
     checkpoint::TimeTilNextPlay,
     light::InLight,
     room::Movable,
 };
-
-// character_controls::{Character, Hurt, StatusEffect, StatusEffects},
-//     checkpoint::TimeTilNextPlay,
-//     light::{CheckInLight, InLight},
-//     room::Movable,
-// };
-// use bevy::prelude::*;
-// use bevy_kira_audio::{
-//     Audio, AudioControl, AudioEasing, AudioTween, SpatialAudioEmitter, SpatialRadius,
-// };
 
 use bevy::prelude::*;
 use bevy_kira_audio::{

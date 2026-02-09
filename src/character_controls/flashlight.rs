@@ -20,15 +20,39 @@ pub enum FlashlightState {
     Collected,
 }
 
+#[derive(Component)]
+pub struct FlashlightToggle(pub FlashlightToggleState);
+
+#[derive(PartialEq, Eq)]
+pub enum FlashlightToggleState {
+    Toggling,
+    Toggled,
+}
+
+#[derive(Resource)]
+pub struct FlashlightToggleSound(Handle<AudioSource>);
+
+fn load_flashlight_toggle_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(FlashlightToggleSound(
+        asset_server.load("sounds/flashlight_toggle.ogg"),
+    ));
+}
+
 pub fn update_flashlight(
-    mut q_flashlight: Query<(Entity, &mut Flashlight, &mut SpotLight2d)>,
+    mut q_flashlight: Query<(
+        Entity,
+        &mut Flashlight,
+        &mut SpotLight2d,
+        &mut FlashlightToggle,
+    )>,
     inputs: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
     mut commands: Commands,
+    flashlight_toggle_sound: Res<FlashlightToggleSound>,
 ) {
     let enabled = inputs.pressed(KeyCode::Space);
 
-    for (ent, mut flashlight, mut spotlight) in q_flashlight.iter_mut() {
+    for (ent, mut flashlight, mut spotlight, mut flashlight_toggle) in q_flashlight.iter_mut() {
         if flashlight.state == FlashlightState::Collected {
             if enabled && flashlight.battery > 0.0 {
                 flashlight.battery -= time.delta_secs();
@@ -36,7 +60,18 @@ pub fn update_flashlight(
                 spotlight.intensity =
                     (flashlight.battery / (flashlight.max_charge * 0.05)).min(1.0);
                 commands.entity(ent).insert(FlashlightActive);
+                if flashlight_toggle.0 == FlashlightToggleState::Toggled {
+                    flashlight_toggle.0 = FlashlightToggleState::Toggling;
+                    commands.spawn((
+                        AudioPlayer::new(flashlight_toggle_sound.0.clone()),
+                        PlaybackSettings {
+                            volume: bevy::audio::Volume::Linear(0.7),
+                            ..Default::default()
+                        },
+                    ));
+                }
             } else {
+                flashlight_toggle.0 = FlashlightToggleState::Toggled;
                 spotlight.intensity = 0.0;
                 commands.entity(ent).remove::<FlashlightActive>();
             }
@@ -132,6 +167,7 @@ fn update_flashlight_battery(
 }
 
 pub(super) fn register(app: &mut App) {
+    app.add_systems(Startup, load_flashlight_toggle_sound);
     app.add_systems(
         Update,
         (add_flashlight, update_flashlight, update_flashlight_battery),

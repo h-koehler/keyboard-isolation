@@ -49,6 +49,13 @@ fn item(asset_server: &AssetServer, item: Item, item_name: &str, asset_name: &st
     )
 }
 
+#[derive(Resource)]
+pub struct PickupSound(Handle<AudioSource>);
+
+fn load_pickup_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(PickupSound(asset_server.load("sounds/item_pickup.ogg")));
+}
+
 fn pickup_item(
     mut commands: Commands,
     mut q_item: Query<(&mut Transform, &mut CollectableItem, Entity), With<CollectableItem>>,
@@ -64,6 +71,7 @@ fn pickup_item(
         (With<Character>, Without<CollectableItem>),
     >,
     mut q_collected_items: Query<&mut CollectedItems>,
+    pickup_sound: Res<PickupSound>,
 ) {
     let (
         player_transform,
@@ -100,6 +108,14 @@ fn pickup_item(
             }
 
             commands.entity(item_ent).despawn();
+
+            commands.spawn((
+                AudioPlayer::new(pickup_sound.0.clone()),
+                PlaybackSettings {
+                    volume: bevy::audio::Volume::Linear(0.3),
+                    ..Default::default()
+                },
+            ));
         }
     }
 }
@@ -142,6 +158,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 }
 
 pub(super) fn register(app: &mut App) {
-    app.add_systems(Startup, setup);
+    app.add_systems(Startup, (setup, load_pickup_sound));
     app.add_systems(Update, pickup_item);
 }
