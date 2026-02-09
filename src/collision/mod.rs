@@ -46,9 +46,7 @@ pub struct WorldObject {
 pub enum ObjectType {
     Foliage,
     CrashedShip,
-    Rock,
-    Crystal,
-    Debris,
+    Body
 }
 
 /// Bundle for spawning world objects with collision

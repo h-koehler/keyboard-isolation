@@ -189,26 +189,3 @@ pub fn spawn_joe_objects(
     
     spawn_objects_from_data(commands, asset_server, &placements);
 }
-
-/// Manual spawning example - gives you full control
-pub fn spawn_custom_objects(
-    commands: &mut Commands,
-    asset_server: &Res<AssetServer>,
-) {
-    use crate::collision::WorldObjectBundle;
-    
-    // Manually spawn individual objects
-    commands.spawn(WorldObjectBundle::new(
-        ObjectType::CrashedShip,
-        Vec3::new(200.0, 150.0, 1.0),
-        Vec2::new(100.0, 70.0),
-        asset_server.load("crashed_ship.png"),
-    ));
-    
-    commands.spawn(WorldObjectBundle::new(
-        ObjectType::Rock,
-        Vec3::new(-200.0, -100.0, 1.0),
-        Vec2::new(60.0, 60.0),
-        asset_server.load("rock.png"),
-    ));
-}
