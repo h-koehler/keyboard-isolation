@@ -1,5 +1,7 @@
 use crate::{
-    character_controls::flashlight::{Flashlight, FlashlightState},
+    character_controls::flashlight::{
+        Flashlight, FlashlightState, FlashlightToggle, FlashlightToggleState,
+    },
     collision::Collider,
     dialog::DialogOnClose,
     items::CollectedItems,
@@ -28,6 +30,14 @@ pub const STARTING_HEALTH: i8 = 3;
 #[derive(Component)]
 pub struct Character {
     pub health: i8,
+    pub is_hurt: bool,
+}
+
+#[derive(Resource)]
+pub struct Hurt(Handle<AudioSource>);
+
+fn load_hurt_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Hurt(asset_server.load("sounds/punch.ogg")));
 }
 
 impl Character {
@@ -35,6 +45,8 @@ impl Character {
         if self.health > 0 {
             self.health -= 1;
         }
+
+        self.is_hurt = true;
     }
 
     pub fn heal(&mut self) {
@@ -73,6 +85,21 @@ impl StatusEffects {
     }
 }
 
+fn play_hurt_sound(mut commands: Commands, mut q_player: Query<&mut Character>, hurt: Res<Hurt>) {
+    if let Ok(mut player) = q_player.single_mut() {
+        if player.is_hurt == true {
+            player.is_hurt = false;
+            commands.spawn((
+                AudioPlayer::new(hurt.0.clone()),
+                PlaybackSettings {
+                    volume: bevy::audio::Volume::Linear(0.7),
+                    ..Default::default()
+                },
+            ));
+        }
+    }
+}
+
 #[derive(Component, Default)]
 pub struct Velocity {
     pub linear_velocity: Vec2,
@@ -87,10 +114,14 @@ fn get_speed(status_effects: &StatusEffects) -> f32 {
 }
 
 fn player_movement_input(
+    mut commands: Commands,
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Velocity, &StatusEffects), With<Character>>,
+    mut q_player: Query<(&mut Velocity, &StatusEffects, &mut Walking), With<Character>>,
+    q_walk_audio: Query<Entity, With<WalkAudio>>,
+    walk_sound: Res<Walk>,
 ) {
-    let (mut char_vel, status_effects) = q_player.single_mut().expect("No Player Object");
+    let (mut char_vel, status_effects, mut walk_state) =
+        q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
     if inputs.pressed(KeyCode::KeyA) {
         dir.x -= 1.0;
@@ -104,10 +135,48 @@ fn player_movement_input(
     if inputs.pressed(KeyCode::KeyS) {
         dir.y -= 1.0;
     }
+
+    if dir != Vec2::ZERO && walk_state.0 == WalkState::Stopped {
+        walk_state.0 = WalkState::Walking;
+        commands.spawn((
+            WalkAudio,
+            AudioPlayer::new(walk_sound.0.clone()),
+            PlaybackSettings {
+                volume: bevy::audio::Volume::Linear(0.1),
+                mode: bevy::audio::PlaybackMode::Loop,
+                ..Default::default()
+            },
+        ));
+    } else if dir == Vec2::ZERO {
+        walk_state.0 = WalkState::Stopped;
+        if let Ok(walk_audio) = q_walk_audio.single() {
+            commands.entity(walk_audio).despawn();
+        }
+    }
+
     let speed = get_speed(status_effects);
     char_vel.linear_velocity = char_vel
         .linear_velocity
         .lerp(dir.normalize_or_zero() * speed, 0.5);
+}
+
+#[derive(Resource)]
+pub struct Walk(Handle<AudioSource>);
+
+#[derive(Component)]
+pub struct WalkAudio;
+
+#[derive(PartialEq, Eq)]
+pub enum WalkState {
+    Walking,
+    Stopped,
+}
+
+#[derive(Component)]
+pub struct Walking(WalkState);
+
+fn load_walk_sound(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(Walk(asset_server.load("sounds/walking.ogg")));
 }
 
 pub(crate) fn apply_velocity(
@@ -182,6 +251,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             DialogOnClose("It's amazing I survived the crash...".into()),
             Character {
                 health: STARTING_HEALTH,
+                is_hurt: false,
             },
             // Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
             // LightOccluder2d {
@@ -194,6 +264,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 CollectedItems(HashSet::new()),
                 Movable,
                 Velocity::default(),
+                Walking(WalkState::Stopped),
                 Collider::square(45.0),
             ),
             Sprite {
@@ -228,6 +299,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     outer_angle: 25.0,
                     ..default()
                 },
+                FlashlightToggle(FlashlightToggleState::Toggled),
             ));
         });
 }
@@ -251,13 +323,26 @@ fn camera_follow_player(
 pub(super) fn register(app: &mut App) {
     flashlight::register(app);
 
-    app.add_systems(Startup, (setup /*load_profiles*/,));
+    app.add_systems(
+        Startup,
+        (
+            setup, /*load_profiles*/
+            load_walk_sound,
+            load_hurt_sound,
+        ),
+    );
     app.add_systems(
         Update,
         player_movement_input.run_if(resource_exists::<Playing>),
     );
     app.add_systems(
         PostUpdate,
-        (apply_velocity, player_rotation_input, camera_follow_player).chain(),
+        (
+            apply_velocity,
+            player_rotation_input,
+            camera_follow_player,
+            play_hurt_sound,
+        )
+            .chain(),
     );
 }

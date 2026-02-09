@@ -23,7 +23,7 @@ pub struct CheckpointDone;
 pub struct CheckpointBlinking(f32);
 
 #[derive(Component)]
-pub struct TimeTilNextPlay(Timer);
+pub struct TimeTilNextPlay(pub Timer);
 
 #[derive(Resource)]
 pub struct GetCheckpoint(Handle<bevy::audio::AudioSource>);

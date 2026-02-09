@@ -1,12 +1,19 @@
 use crate::{
     character_controls::{Character, StatusEffect, StatusEffects},
+    checkpoint::TimeTilNextPlay,
     light::InLight,
     room::Movable,
 };
+
 use bevy::prelude::*;
+use bevy_kira_audio::{
+    Audio, AudioControl, AudioEasing, AudioTween, SpatialAudioEmitter, SpatialRadius,
+};
 use bevy_lit::prelude::LightOccluder2d;
 use rand::Rng;
-use std::f32::consts::FRAC_PI_2;
+use std::{f32::consts::FRAC_PI_2, time::Duration};
+
+pub const ENEMY_DURATION: f32 = 5.0;
 
 #[derive(Component)]
 pub struct Enemy;
@@ -86,7 +93,35 @@ pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bund
             custom_size: Some(Vec2::splat(45.0)),
             ..Default::default()
         },
+        SpatialAudioEmitter { instances: vec![] },
+        SpatialRadius { radius: 600.0 },
+        TimeTilNextPlay(Timer::from_seconds(ENEMY_DURATION, TimerMode::Repeating)),
     )
+}
+
+fn play_enemy_audio(
+    time: Res<Time>,
+    asset_server: Res<AssetServer>,
+    mut q_enemy: Query<(&mut TimeTilNextPlay, &mut SpatialAudioEmitter), With<Enemy>>,
+    audio: Res<Audio>,
+) {
+    let delta = time.delta_secs();
+    for (mut timer, mut spatial_audio) in q_enemy.iter_mut() {
+        timer.0.tick(Duration::from_secs_f32(delta));
+        if timer.0.just_finished() {
+            let checkpoint_audio = audio
+                .play(asset_server.load("sounds/monster_sound_01.ogg"))
+                .with_volume(-2.)
+                .fade_in(AudioTween::new(
+                    Duration::from_millis(50),
+                    AudioEasing::OutPowi(2),
+                ))
+                .loop_from(6.0)
+                .loop_until(10.0)
+                .handle();
+            spatial_audio.instances.push(checkpoint_audio);
+        }
+    }
 }
 
 pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bundle {
@@ -116,6 +151,9 @@ pub fn stalker(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bu
             custom_size: Some(Vec2::splat(45.0)),
             ..Default::default()
         },
+        SpatialAudioEmitter { instances: vec![] },
+        SpatialRadius { radius: 600.0 },
+        TimeTilNextPlay(Timer::from_seconds(ENEMY_DURATION, TimerMode::Repeating)),
     )
 }
 
@@ -155,6 +193,9 @@ pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) 
             custom_size: Some(Vec2::splat(45.0)),
             ..Default::default()
         },
+        SpatialAudioEmitter { instances: vec![] },
+        SpatialRadius { radius: 600.0 },
+        TimeTilNextPlay(Timer::from_seconds(ENEMY_DURATION, TimerMode::Repeating)),
     )
 }
 
@@ -320,6 +361,7 @@ pub(super) fn register(app: &mut App) {
         (
             teleport,
             track_player,
+            play_enemy_audio,
             flee_light,
             apply_velocity,
             stalk_player,
