@@ -1,4 +1,7 @@
 use crate::{
+    animation::AnimateSprite,
+    animation::AnimationState,
+    anim_clips::PLAYER_CLIPS,
     character_controls::flashlight::{
         Flashlight, FlashlightState, FlashlightToggle, FlashlightToggleState,
     },
@@ -8,6 +11,7 @@ use crate::{
     light::{CheckInLight, IgnoreInLightCheckLight},
     menu::Playing,
     room::Movable,
+    assets::{LoadAssetsSet, load_atlas},
     sanity::Sanity,
     win::{CurrentState, GameState},
 };
@@ -22,10 +26,7 @@ const DEBUG_BRIGHTNESS: bool = true;
 const BASE_MOVE_SPEED: f32 = 200.0;
 const SLOWED_MULTIPLIER: f32 = 0.7;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;
-const PLAYER_ASS_PATH: &str = "player_up.png";
 pub const STARTING_HEALTH: i8 = 3;
-// const PLAYER_SIZE: Option<Vec2> = Some(Vec2::new(64.0, 64.0));
-// const ROOM_INSET: f32 = 4.0;
 
 #[derive(Component)]
 pub struct Character {
@@ -56,6 +57,11 @@ impl Character {
     }
 }
 
+#[derive(Resource)]
+pub struct PlayerAsset {
+    image: Handle<Image>,
+    layout: Handle<TextureAtlasLayout>,
+}
 #[derive(Component)]
 pub struct SpawnEnemies {
     pub stopwatch: Stopwatch,
@@ -115,24 +121,22 @@ fn get_speed(status_effects: &StatusEffects) -> f32 {
 fn player_movement_input(
     mut commands: Commands,
     inputs: Res<ButtonInput<KeyCode>>,
-    mut q_player: Query<(&mut Velocity, &StatusEffects, &mut Walking), With<Character>>,
+    mut q_player: Query<(&mut Velocity, &mut AnimationState, &StatusEffects, &mut Walking), With<Character>>,
     q_walk_audio: Query<Entity, With<WalkAudio>>,
     walk_sound: Res<Walk>,
 ) {
-    let (mut char_vel, status_effects, mut walk_state) =
-        q_player.single_mut().expect("No Player Object");
+    let (mut vel, mut anim,status_effects, mut walk_state) = q_player.single_mut().expect("No Player Object");
     let mut dir = Vec2::ZERO;
-    if inputs.pressed(KeyCode::KeyA) {
-        dir.x -= 1.0;
-    }
-    if inputs.pressed(KeyCode::KeyD) {
-        dir.x += 1.0;
-    }
-    if inputs.pressed(KeyCode::KeyW) {
-        dir.y += 1.0;
-    }
-    if inputs.pressed(KeyCode::KeyS) {
-        dir.y -= 1.0;
+    if inputs.pressed(KeyCode::KeyA) { dir.x -= 1.0; }
+    if inputs.pressed(KeyCode::KeyD) { dir.x += 1.0; }
+    if inputs.pressed(KeyCode::KeyW) { dir.y += 1.0; }
+    if inputs.pressed(KeyCode::KeyS) { dir.y -= 1.0; }
+
+    // 0 = idle/pause, 1 = walk (example mapping)
+    if dir == Vec2::ZERO {
+        anim.set_anim_state(0);
+    } else {
+        anim.set_anim_state(1);
     }
 
     if dir != Vec2::ZERO && walk_state.0 == WalkState::Stopped {
@@ -154,7 +158,7 @@ fn player_movement_input(
     }
 
     let speed = get_speed(status_effects);
-    char_vel.linear_velocity = char_vel
+    vel.linear_velocity = vel
         .linear_velocity
         .lerp(dir.normalize_or_zero() * speed, 0.5);
 }
@@ -219,13 +223,12 @@ fn player_rotation_input(
     }
 
     if dir.length() > f32::EPSILON {
-        trans.rotation = trans
-            .rotation
-            .lerp(Quat::from_axis_angle(Vec3::Z, Vec2::X.angle_to(dir)), 0.1);
+        let angle = Vec2::X.angle_to(dir) + std::f32::consts::FRAC_PI_2; // rotate left 90°
+        trans.rotation = trans.rotation.lerp(Quat::from_rotation_z(angle), 0.1);
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, player_asset: Res<PlayerAsset>) {
     commands
         .spawn((
             Camera2d::default(),
@@ -248,6 +251,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     commands
         .spawn((
+            AnimateSprite { default_fps: 10, anim_state: 0, clips: PLAYER_CLIPS },
             Name::new("Character"),
             DialogOnClose("It's amazing I survived the crash...".into()),
             Character {
@@ -269,8 +273,11 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 Collider::square(45.0),
             ),
             Sprite {
-                image: asset_server.load(PLAYER_ASS_PATH),
-                custom_size: Some(Vec2::splat(45.0)),
+                image: player_asset.image.clone(),
+                texture_atlas: Some(TextureAtlas {
+                    layout: player_asset.layout.clone(),
+                    index: 0,
+                }),
                 ..Default::default()
             },
             Transform::from_translation(Vec3::Z * 0.0),
@@ -300,6 +307,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                     outer_angle: 25.0,
                     ..default()
                 },
+                Transform::from_rotation(Quat::from_rotation_z(-std::f32::consts::FRAC_PI_2)),
                 FlashlightToggle(FlashlightToggleState::Toggled),
             ));
         });
@@ -327,7 +335,7 @@ pub(super) fn register(app: &mut App) {
     app.add_systems(
         Startup,
         (
-            setup, /*load_profiles*/
+            setup.after(LoadAssetsSet/*load_profiles*/), /*load_profiles*/
             load_walk_sound,
             load_hurt_sound,
         ),
@@ -346,4 +354,10 @@ pub(super) fn register(app: &mut App) {
         )
             .chain(),
     );
+    load_atlas::<6, 64>(app, "astro-Sheet.png", |world, (texture, layout)| {
+        world.insert_resource(PlayerAsset {
+            image: texture,
+            layout: layout,
+        });
+    });
 }

@@ -23,6 +23,7 @@ pub mod room;
 pub mod sanity;
 pub mod ui;
 pub mod win;
+pub mod anim_clips;
 
 fn main() {
     let mut app = App::new();

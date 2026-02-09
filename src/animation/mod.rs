@@ -1,74 +1,113 @@
 use bevy::prelude::*;
 
-#[derive(Component)]
-#[require(Sprite, AnimationState)]
-pub struct AnimateSprite {
+#[derive(Clone, Copy)]
+pub struct AnimClip {
+    pub start: u32,
+    pub end: u32,
     pub fps: u32,
 }
 
-#[derive(Reflect, Debug, Component, Default)]
+
+#[derive(Component)]
+#[require(Sprite, AnimationState)]
+pub struct AnimateSprite {
+    pub default_fps: u32,
+    pub anim_state: u32,
+    pub clips: &'static [AnimClip], // index by anim_state
+}
+
+#[derive(Reflect, Debug, Component)]
 pub struct AnimationState {
     frame: u32,
     time: f32,
-    frozen: bool,
+    anim_state: u32,
+    last_anim_state: u32,
+}
+
+
+impl Default for AnimationState {
+    fn default() -> Self {
+        Self {
+            frame: 0,
+            time: 0.0,
+            anim_state: 0,
+            last_anim_state: u32::MAX, // force initial sync
+        }
+    }
 }
 
 impl AnimationState {
-    pub fn new(frame: u32) -> Self {
-        AnimationState {
-            frozen: false,
-            time: 0.0,
-            frame,
+    pub fn pause(&mut self) { self.anim_state = 0; }
+
+    pub fn set_anim_state(&mut self, animation: u32) {
+        self.anim_state = animation;
+        println!("Set animation to {animation}");
+    }
+
+    fn current_clip<'a>(&self, config: &'a AnimateSprite) -> Option<AnimClip> {
+        let idx = self.anim_state as usize;
+        config.clips.get(idx).copied()
+    }
+
+    fn sync_if_changed(&mut self, config: &AnimateSprite) {
+        if self.anim_state != self.last_anim_state {
+            // animation changed -> restart the new clip
+            self.time = 0.0;
+
+            if let Some(clip) = self.current_clip(config) {
+                self.frame = clip.start;
+            } else {
+                self.frame = 0;
+            }
+
+            self.last_anim_state = self.anim_state;
         }
     }
 
-    pub fn pause(&mut self) {
-        self.frozen = true;
-    }
+    fn tick(&mut self, delta: f32, config: &AnimateSprite) {
+        // If you still want AnimateSprite.anim_state to “drive” it, copy it ONCE HERE:
+        //self.anim_state = config.anim_state;
 
-    pub fn resume(&mut self) {
-        self.frozen = false;
-    }
+        self.sync_if_changed(config);
 
-    pub fn set_frame(&mut self, frame: u32) {
-        self.frame = frame;
-    }
+        if self.anim_state == 999 {
+            return; // paused
+        }
 
-    fn tick(&mut self, delta: f32, config: &AnimateSprite, n_frames: u32) {
-        if self.frozen {
+        let Some(clip) = self.current_clip(config) else {
             return;
         };
 
         self.time += delta;
+        let fps = if clip.fps == 0 { config.default_fps } else { clip.fps };
+        let time_per_frame = 1.0 / fps as f32;
 
-        let time_per_frame = 1.0 / config.fps as f32;
         while self.time >= time_per_frame {
             self.time -= time_per_frame;
-            self.frame += 1;
+
+            if self.frame < clip.start || self.frame > clip.end {
+                self.frame = clip.start;
+            } else if self.frame == clip.end {
+                self.frame = clip.start; // loop
+            } else {
+                self.frame += 1;
+            }
         }
-        self.frame %= n_frames;
     }
 }
 
 fn execute_animations(
     time: Res<Time>,
     mut query: Query<(&AnimateSprite, &mut AnimationState, &mut Sprite)>,
-    texture_atlas_layouts: Res<Assets<TextureAtlasLayout>>,
 ) {
     for (config, mut state, mut sprite) in &mut query {
-        let Some(atlas) = &mut sprite.texture_atlas else {
-            continue;
-        };
+        let Some(atlas) = &mut sprite.texture_atlas else { continue; };
 
-        let n_frames = texture_atlas_layouts
-            .get(&atlas.layout)
-            .unwrap()
-            .textures
-            .len() as u32;
-        state.tick(time.delta_secs(), config, n_frames);
+        state.tick(time.delta_secs(), config);
 
-        if atlas.index != state.frame as usize {
-            atlas.index = state.frame as usize;
+        let desired = state.frame as usize;
+        if atlas.index != desired {
+            atlas.index = desired;
         }
     }
 }
