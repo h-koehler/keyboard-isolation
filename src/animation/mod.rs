@@ -7,7 +7,6 @@ pub struct AnimClip {
     pub fps: u32,
 }
 
-
 #[derive(Component)]
 #[require(Sprite, AnimationState)]
 pub struct AnimateSprite {
@@ -24,7 +23,6 @@ pub struct AnimationState {
     last_anim_state: u32,
 }
 
-
 impl Default for AnimationState {
     fn default() -> Self {
         Self {
@@ -37,11 +35,12 @@ impl Default for AnimationState {
 }
 
 impl AnimationState {
-    pub fn pause(&mut self) { self.anim_state = 0; }
+    pub fn pause(&mut self) {
+        self.anim_state = 0;
+    }
 
     pub fn set_anim_state(&mut self, animation: u32) {
         self.anim_state = animation;
-        println!("Set animation to {animation}");
     }
 
     fn current_clip<'a>(&self, config: &'a AnimateSprite) -> Option<AnimClip> {
@@ -79,7 +78,11 @@ impl AnimationState {
         };
 
         self.time += delta;
-        let fps = if clip.fps == 0 { config.default_fps } else { clip.fps };
+        let fps = if clip.fps == 0 {
+            config.default_fps
+        } else {
+            clip.fps
+        };
         let time_per_frame = 1.0 / fps as f32;
 
         while self.time >= time_per_frame {
@@ -101,7 +104,9 @@ fn execute_animations(
     mut query: Query<(&AnimateSprite, &mut AnimationState, &mut Sprite)>,
 ) {
     for (config, mut state, mut sprite) in &mut query {
-        let Some(atlas) = &mut sprite.texture_atlas else { continue; };
+        let Some(atlas) = &mut sprite.texture_atlas else {
+            continue;
+        };
 
         state.tick(time.delta_secs(), config);
 

@@ -24,7 +24,7 @@ use bevy_lit::prelude::*;
 
 pub mod flashlight;
 
-const DEBUG_BRIGHTNESS: bool = true;
+const DEBUG_BRIGHTNESS: bool = false;
 const BASE_MOVE_SPEED: f32 = 200.0;
 const SLOWED_MULTIPLIER: f32 = 0.7;
 const MOVE_SPEED_PERCENTAGE_REQUIRED_TO_ROTATE: f32 = 0.98;

@@ -87,10 +87,10 @@ pub fn alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) -> impl Bund
                 change_direction_chance: 0.01,
             },
         },
-        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
-        LightOccluder2d {
-            occluder_mask: asset_server.load("alien.png"),
-        },
+        // Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        // LightOccluder2d {
+        //     occluder_mask: asset_server.load("alien.png"),
+        // },
         Sprite {
             image: asset_server.load("alien.png"),
             custom_size: Some(Vec2::splat(45.0)),
@@ -155,10 +155,6 @@ pub fn stalker(
                 change_direction_chance: 0.05,
             },
         },
-        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
-        LightOccluder2d {
-            occluder_mask: asset_server.load("stalker.png"),
-        },
         AnimateSprite {
             clips: ENEMY_CLIPS,
             anim_state: 0,
@@ -206,10 +202,10 @@ pub fn teleporting_alien(asset_server: &AssetServer, meshes: &mut Assets<Mesh>) 
                 chance: 0.03,
             },
         },
-        Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
-        LightOccluder2d {
-            occluder_mask: asset_server.load("teleporting_alien.png"),
-        },
+        // Mesh2d(meshes.add(Rectangle::new(45.0, 45.0))),
+        // LightOccluder2d {
+        //     occluder_mask: asset_server.load("teleporting_alien.png"),
+        // },
         Sprite {
             image: asset_server.load("teleporting_alien.png"),
             custom_size: Some(Vec2::splat(45.0)),
