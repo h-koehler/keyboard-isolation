@@ -7,7 +7,6 @@ use crate::{
     room::Movable,
     sanity::Sanity,
     win::{CurrentState, GameState},
-    y_sort::YSort,
 };
 use bevy::prelude::*;
 use bevy::{platform::collections::HashSet, time::Stopwatch};
@@ -195,14 +194,13 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 Movable,
                 Velocity::default(),
                 Collider::square(45.0),
-                YSort::default_layer(),
             ),
             Sprite {
                 image: asset_server.load(PLAYER_ASS_PATH),
                 custom_size: Some(Vec2::splat(45.0)),
                 ..Default::default()
             },
-            Transform::from_translation(Vec3::Z * 3.0),
+            Transform::from_translation(Vec3::Z * 0.0),
             IgnoreInLightCheckLight,
             PointLight2d {
                 inner_radius: 0.0,
