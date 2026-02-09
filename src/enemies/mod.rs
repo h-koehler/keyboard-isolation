@@ -298,8 +298,7 @@ fn flee_light(
             }
             FleeAction::Teleport { distance, chance } => {
                 if random < *chance {
-                    enemy_transform.translation =
-                        enemy_transform.translation + (*distance * wiggled_dir).extend(0.0);
+                    enemy_transform.translation += (*distance * wiggled_dir).extend(0.0);
                 }
             }
         }

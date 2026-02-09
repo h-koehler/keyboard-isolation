@@ -105,12 +105,11 @@ fn on_enter(
     q_menu: Query<Entity, With<Menu>>,
     mut commands: Commands,
 ) {
-    if inputs.just_pressed(KeyCode::Enter) {
-        if let Ok(ent) = q_menu.single() {
+    if inputs.just_pressed(KeyCode::Enter)
+        && let Ok(ent) = q_menu.single() {
             commands.insert_resource(Playing);
             commands.entity(ent).despawn();
         }
-    }
 }
 
 #[derive(Resource)]

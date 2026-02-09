@@ -189,12 +189,12 @@ fn done_checkpoint_on_close(
             .remove::<CheckpointBlinking>()
             .insert(CheckpointDone);
         commands.spawn(
-            (SoundHandle(
+            SoundHandle(
                 audio
                     .play(get_checkpoint_sound.0.clone())
                     .with_volume(-6.0)
                     .handle(),
-            )),
+            ) ,
         );
     }
 }

@@ -70,12 +70,12 @@ pub fn update_flashlight(
                     flashlight_toggle.0 = FlashlightToggleState::Toggling;
 
                     commands.spawn(
-                        (SoundHandle(
+                        SoundHandle(
                             audio_player
                                 .play(flashlight_toggle_sound.0.clone())
                                 .with_volume(-3.1)
                                 .handle(),
-                        )),
+                        ) ,
                     );
                 }
             } else {
@@ -96,10 +96,10 @@ pub fn add_flashlight(
     mut q_flashlight: Query<&mut Flashlight>,
     q_collected_items: Query<&CollectedItems>,
 ) {
-    if let Ok(collected_items) = q_collected_items.single() {
-        if collected_items.0.get(&Item::Flashlight) == Some(&Item::Flashlight) {
-            if let Ok(mut flashlight) = q_flashlight.single_mut() {
-                if flashlight.state == FlashlightState::Lost {
+    if let Ok(collected_items) = q_collected_items.single()
+        && collected_items.0.get(&Item::Flashlight) == Some(&Item::Flashlight)
+            && let Ok(mut flashlight) = q_flashlight.single_mut()
+                && flashlight.state == FlashlightState::Lost {
                     flashlight.state = FlashlightState::Collected;
                     commands
                         .spawn((
@@ -153,9 +153,6 @@ pub fn add_flashlight(
                             });
                         });
                 }
-            }
-        }
-    }
 }
 
 fn update_flashlight_battery(

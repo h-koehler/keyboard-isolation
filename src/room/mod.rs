@@ -162,7 +162,7 @@ pub(super) fn register(app: &mut App) {
     load_atlas::<7, 32>(app, "fire.png", |world, (texture, layout)| {
         world.insert_resource(FireAsset {
             image: texture,
-            layout: layout,
+            layout,
         });
     });
 }

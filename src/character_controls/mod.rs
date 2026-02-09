@@ -93,14 +93,13 @@ fn play_hurt_sound(
     mut q_player: Query<&mut Character>,
     hurt: Res<Hurt>,
 ) {
-    if let Ok(mut player) = q_player.single_mut() {
-        if player.is_hurt == true {
+    if let Ok(mut player) = q_player.single_mut()
+        && player.is_hurt {
             player.is_hurt = false;
             commands.spawn(SoundHandle(
                 audio.play(hurt.0.clone()).with_volume(-3.1).handle(),
             ));
         }
-    }
 }
 
 #[derive(Component, Default)]
@@ -239,7 +238,7 @@ fn player_rotation_input(
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
-            Camera2d::default(),
+            Camera2d,
             Lighting2dSettings {
                 penetration: PenetrationSettings {
                     max: 30.0,

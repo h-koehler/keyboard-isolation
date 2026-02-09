@@ -80,7 +80,7 @@ fn on_near_dead_body(
 
     sanity.clamp(&blockers);
 
-    sanity.decrease_sanity(10.0, &mut amplifiers, status_effects);
+    sanity.decrease_sanity(10.0, &amplifiers, status_effects);
 }
 
 pub(super) fn register(app: &mut App) {
