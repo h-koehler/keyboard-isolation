@@ -73,7 +73,7 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             p.spawn((
                 Name::new("Status Effect Text"),
                 Node {
-                    margin: UiRect::left(Val::Px(150.0)),
+                    margin: UiRect::left(Val::Px(125.0)),
                     ..Default::default()
                 },
             ))
@@ -100,7 +100,7 @@ fn create_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 Name::new("Beacon Components"),
                 ItemsUI,
                 Node {
-                    margin: UiRect::left(Val::Px(150.0)),
+                    margin: UiRect::left(Val::Px(125.0)),
                     width: Val::Px(350.0),
                     height: Val::Px(32.0),
                     ..Default::default()
