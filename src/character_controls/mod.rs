@@ -284,7 +284,7 @@ fn setup(mut commands: Commands, player_asset: Res<PlayerAsset>) {
                 clips: PLAYER_CLIPS,
             },
             Name::new("Character"),
-            DialogOnClose("It's amazing I survived the crash...".into()),
+            // DialogOnClose("It's amazing I survived the crash...".into()),
             Character {
                 health: STARTING_HEALTH,
                 is_hurt: false,

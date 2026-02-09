@@ -1,9 +1,10 @@
-use bevy::prelude::*;
+use bevy::{color::palettes::css, prelude::*};
 
 use crate::{
     character_controls::{Character, STARTING_HEALTH, StatusEffect, StatusEffects},
     dialog::DialogOnClose,
     items::{CollectedItems, Item},
+    menu::{DefaultFont, Playing},
 };
 
 pub const UI_HEIGHT: f32 = 200.0;
@@ -127,12 +128,54 @@ fn update_ui(
     q_health_ui: Query<Entity, With<HealthUI>>,
     q_status_ui: Query<Entity, With<StatusUI>>,
     q_items_ui: Query<Entity, With<ItemsUI>>,
+    font: Res<DefaultFont>,
 ) {
     if let Ok((player_entity, player_character, is_dead)) = q_player.single() {
         if player_character.health == 0 && !is_dead {
+            commands.entity(player_entity).insert((Dead,));
+
             commands
-                .entity(player_entity)
-                .insert((Dead, DialogOnClose("Oof ouchy I'm dead.".into())));
+                .spawn((
+                    Node {
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        flex_direction: FlexDirection::Column,
+                        ..Default::default()
+                    },
+                    BackgroundColor(css::BLACK.into()),
+                    GlobalZIndex(10),
+                ))
+                .with_children(|p| {
+                    p.spawn((
+                        Text::new("You Died..."),
+                        Node {
+                            margin: UiRect::all(Val::Px(40.0)),
+                            ..Default::default()
+                        },
+                        TextFont {
+                            font: font.get(),
+                            font_size: 64.0,
+                            ..Default::default()
+                        },
+                    ));
+
+                    p.spawn((
+                        Text::new("Refresh to try again"),
+                        Node {
+                            margin: UiRect::all(Val::Px(40.0)),
+                            ..Default::default()
+                        },
+                        TextFont {
+                            font: font.get(),
+                            font_size: 32.0,
+                            ..Default::default()
+                        },
+                    ));
+                });
+
+            commands.remove_resource::<Playing>();
         }
         if let Ok(health_ui) = q_health_ui.single() {
             commands.entity(health_ui).despawn_children();
@@ -201,5 +244,5 @@ fn update_ui(
 
 pub(super) fn register(app: &mut App) {
     app.add_systems(Startup, create_ui);
-    app.add_systems(PostUpdate, update_ui);
+    app.add_systems(PostUpdate, update_ui.run_if(resource_exists::<Playing>));
 }
