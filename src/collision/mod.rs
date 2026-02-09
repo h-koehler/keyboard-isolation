@@ -49,6 +49,7 @@ pub enum ObjectType {
     Rock,
     Crystal,
     Debris,
+    Body
 }
 
 /// Bundle for spawning world objects with collision
