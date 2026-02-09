@@ -152,8 +152,7 @@ fn update_ui(
                 .iter()
                 .map(|status_effect| match status_effect {
                     StatusEffect::Slowed => "cripple_icon.png",
-                    StatusEffect::Stalked => "insanity_icon.png",
-                    StatusEffect::Insane => "insanity_icon.png",
+                    StatusEffect::Stalked => "stalked_icon.png",
                 });
             if let Ok(status_ui) = q_status_ui.single() {
                 commands.entity(status_ui).despawn_children();

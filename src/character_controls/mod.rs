@@ -65,7 +65,6 @@ pub struct SpawnEnemies {
 pub enum StatusEffect {
     Slowed,
     Stalked,
-    Insane,
 }
 
 #[derive(Component)]
